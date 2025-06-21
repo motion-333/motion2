@@ -23,7 +23,16 @@
       background:linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(255,255,255,0));
       pointer-events:none; z-index:-1;
     }
-    #logo { margin-left:20px; color:#1449ff; font-family:'Outfit',sans-serif; font-size:20px; letter-spacing:2px; }
+    #logo {
+      margin-left:20px;
+      color:#1449ff;
+      font-family:'Outfit',sans-serif;
+      font-size:20px;
+      letter-spacing:2px;
+      width:140px;
+      display:inline-block;
+      overflow:hidden;
+    }
     #tabs {
       flex:1;
       display:flex;
@@ -50,8 +59,8 @@
       background:#1449ff66;
     }
     .tab:hover {
-      font-variation-settings:'wght' 650,'wdth' 125;
-      transform:scale(1.1);
+      font-variation-settings:'wght' 750,'wdth' 160;
+      transform:scale(1.2);
     }
     /* Glass overlay */
     .glass { position:fixed; top:0; left:0; width:100vw; height:100vh; backdrop-filter:blur(20px) brightness(0.95); opacity:0; transition:opacity 0.8s ease-in-out; pointer-events:none; z-index:2; }
