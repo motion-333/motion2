@@ -41,13 +41,18 @@
     }
     .tab {
       position:relative;
-      padding:10px 15px;
-      margin:0 8px;
+      padding:10px 12px;
+      margin:0 4px;
       cursor:pointer;
       color:#1449ff;
       font-family:'Outfit',sans-serif;
       font-variation-settings:'wght' 400,'wdth' 100;
-      transition:font-variation-settings 0.45s cubic-bezier(.34,1.56,.64,1), transform 0.45s cubic-bezier(.34,1.56,.64,1);
+      transition:font-variation-settings 0.45s cubic-bezier(.34,1.56,.64,1);
+    }
+    .tab span {
+      display:inline-block;
+      font-variation-settings:'wght' 400,'wdth' 100;
+      transition:font-variation-settings 0.45s cubic-bezier(.34,1.56,.64,1);
     }
     .tab + .tab::before {
       content:"";
@@ -59,8 +64,10 @@
       background:#1449ff66;
     }
     .tab:hover {
-      font-variation-settings:'wght' 750,'wdth' 160;
-      transform:scale(1.2);
+      font-variation-settings:'wght' 750,'wdth' 500;
+    }
+    .tab span:hover {
+      font-variation-settings:'wght' 750,'wdth' 600;
     }
     /* Glass overlay */
     .glass { position:fixed; top:0; left:0; width:100vw; height:100vh; backdrop-filter:blur(20px) brightness(0.95); opacity:0; transition:opacity 0.8s ease-in-out; pointer-events:none; z-index:2; }
@@ -75,9 +82,9 @@
   <div id="topbar">
     <div id="logo">['[]']'|' :[][\]</div>
     <div id="tabs">
-      <div class="tab">home</div>
-      <div class="tab">work</div>
-      <div class="tab">about</div>
+      <div class="tab"><span>h</span><span>o</span><span>m</span><span>e</span></div>
+      <div class="tab"><span>w</span><span>o</span><span>r</span><span>k</span></div>
+      <div class="tab"><span>a</span><span>b</span><span>o</span><span>u</span><span>t</span></div>
     </div>
   </div>
   <div class="glass" id="glass"></div>
@@ -91,13 +98,13 @@
     const tabsEl = document.getElementById('tabs');
     const tabEls = Array.from(tabsEl.querySelectorAll('.tab'));
     tabEls.forEach(t => {
-      t.addEventListener('mouseenter', () => {
+      t.addEventListener('mouseover', () => {
         const rect = t.getBoundingClientRect();
         const cRect = tabsEl.getBoundingClientRect();
         const offset = cRect.left + cRect.width/2 - (rect.left + rect.width/2);
         tabsEl.style.transform = `translateX(${offset}px)`;
       });
-      t.addEventListener('mouseleave', () => { tabsEl.style.transform = ''; });
+      t.addEventListener('mouseout', () => { tabsEl.style.transform = ''; });
     });
     const logoText = "['[]']'|':[][\\]";
     let logoIndex = 0, logoDir = 1;
