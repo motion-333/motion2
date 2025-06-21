@@ -37,7 +37,7 @@
       flex:1;
       display:flex;
       justify-content:center;
-      transition:transform 0.6s cubic-bezier(.34,1.56,.64,1);
+      gap:8px;
     }
     .tab {
       position:relative;
@@ -47,12 +47,13 @@
       color:#1449ff;
       font-family:'Outfit',sans-serif;
       font-variation-settings:'wght' 400,'wdth' 100;
-      transition:font-variation-settings 0.45s cubic-bezier(.34,1.56,.64,1);
+      transition:font-variation-settings 1s ease;
+      border-radius:8px;
     }
     .tab span {
       display:inline-block;
       font-variation-settings:'wght' 400,'wdth' 100;
-      transition:font-variation-settings 0.45s cubic-bezier(.34,1.56,.64,1);
+      transition:font-variation-settings 1s ease;
     }
     .tab + .tab::before {
       content:"";
@@ -64,10 +65,10 @@
       background:#1449ff66;
     }
     .tab:hover {
-      font-variation-settings:'wght' 750,'wdth' 500;
+      font-variation-settings:'wght' 750,'wdth' 1000;
     }
     .tab span:hover {
-      font-variation-settings:'wght' 750,'wdth' 600;
+      font-variation-settings:'wght' 750,'wdth' 2000;
     }
     /* Glass overlay */
     .glass { position:fixed; top:0; left:0; width:100vw; height:100vh; backdrop-filter:blur(20px) brightness(0.95); opacity:0; transition:opacity 0.8s ease-in-out; pointer-events:none; z-index:2; }
@@ -95,17 +96,6 @@
     // Renderer & scene setup
     const bgCanvas = document.getElementById('bgCanvas'), fgCanvas = document.getElementById('fgCanvas'), glass = document.getElementById('glass');
     const logoEl = document.getElementById('logo');
-    const tabsEl = document.getElementById('tabs');
-    const tabEls = Array.from(tabsEl.querySelectorAll('.tab'));
-    tabEls.forEach(t => {
-      t.addEventListener('mouseover', () => {
-        const rect = t.getBoundingClientRect();
-        const cRect = tabsEl.getBoundingClientRect();
-        const offset = cRect.left + cRect.width/2 - (rect.left + rect.width/2);
-        tabsEl.style.transform = `translateX(${offset}px)`;
-      });
-      t.addEventListener('mouseout', () => { tabsEl.style.transform = ''; });
-    });
     const logoText = "['[]']'|':[][\\]";
     let logoIndex = 0, logoDir = 1;
     function logoTick() {
