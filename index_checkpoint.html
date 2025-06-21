@@ -24,24 +24,34 @@
       pointer-events:none; z-index:-1;
     }
     #logo { margin-left:20px; color:#1449ff; font-family:'Outfit',sans-serif; font-size:20px; letter-spacing:2px; }
-    #tabs { flex:1; display:flex; justify-content:center; transition:transform 0.3s; }
-    .tab { margin:0 20px; cursor:pointer; color:#1449ff; display:flex; }
-    .tab span {
-      display:inline-block;
+    #tabs {
+      flex:1;
+      display:flex;
+      justify-content:center;
+      transition:transform 0.6s cubic-bezier(.34,1.56,.64,1);
+    }
+    .tab {
+      position:relative;
+      padding:10px 15px;
+      margin:0 8px;
+      cursor:pointer;
+      color:#1449ff;
       font-family:'Outfit',sans-serif;
-      --scale:1;
-      width:calc(1ch * var(--scale));
-      transform:scaleX(var(--scale));
       font-variation-settings:'wght' 400,'wdth' 100;
-      transition:font-variation-settings 0.3s, transform 0.3s, width 0.3s;
+      transition:font-variation-settings 0.45s cubic-bezier(.34,1.56,.64,1), transform 0.45s cubic-bezier(.34,1.56,.64,1);
     }
-    .tab:hover span {
-      --scale:1.3;
-      font-variation-settings:'wght' 600,'wdth' 125;
+    .tab + .tab::before {
+      content:"";
+      position:absolute;
+      left:-4px;
+      top:25%;
+      bottom:25%;
+      width:1px;
+      background:#1449ff66;
     }
-    .tab span:hover {
-      --scale:1.6;
-      font-variation-settings:'wght' 700,'wdth' 150;
+    .tab:hover {
+      font-variation-settings:'wght' 650,'wdth' 125;
+      transform:scale(1.1);
     }
     /* Glass overlay */
     .glass { position:fixed; top:0; left:0; width:100vw; height:100vh; backdrop-filter:blur(20px) brightness(0.95); opacity:0; transition:opacity 0.8s ease-in-out; pointer-events:none; z-index:2; }
@@ -56,9 +66,9 @@
   <div id="topbar">
     <div id="logo">['[]']'|' :[][\]</div>
     <div id="tabs">
-      <div class="tab"><span>h</span><span>o</span><span>m</span><span>e</span></div>
-      <div class="tab"><span>w</span><span>o</span><span>r</span><span>k</span></div>
-      <div class="tab"><span>a</span><span>b</span><span>o</span><span>u</span><span>t</span></div>
+      <div class="tab">home</div>
+      <div class="tab">work</div>
+      <div class="tab">about</div>
     </div>
   </div>
   <div class="glass" id="glass"></div>
@@ -68,6 +78,7 @@
   <script>
     // Renderer & scene setup
     const bgCanvas = document.getElementById('bgCanvas'), fgCanvas = document.getElementById('fgCanvas'), glass = document.getElementById('glass');
+    const logoEl = document.getElementById('logo');
     const tabsEl = document.getElementById('tabs');
     const tabEls = Array.from(tabsEl.querySelectorAll('.tab'));
     tabEls.forEach(t => {
@@ -79,6 +90,28 @@
       });
       t.addEventListener('mouseleave', () => { tabsEl.style.transform = ''; });
     });
+    const logoText = "['[]']'|':[][\\]";
+    let logoIndex = 0, logoDir = 1;
+    function logoTick() {
+      logoEl.textContent = logoText.slice(0, logoIndex);
+      if (logoDir === 1) {
+        logoIndex++;
+        if (logoIndex > logoText.length) {
+          logoDir = -1;
+          logoIndex = logoText.length;
+          setTimeout(logoTick, 800);
+          return;
+        }
+      } else {
+        logoIndex--;
+        if (logoIndex < 0) {
+          logoDir = 1;
+          logoIndex = 0;
+        }
+      }
+      setTimeout(logoTick, 120);
+    }
+    logoTick();
     const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, antialias:true }); bgRenderer.setClearColor(0xffffff);
     const fgRenderer = new THREE.WebGLRenderer({ canvas: fgCanvas, antialias:true, alpha:true }); fgRenderer.setClearColor(0,0);
     const scene = new THREE.Scene();
