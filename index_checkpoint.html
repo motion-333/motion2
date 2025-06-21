@@ -46,14 +46,19 @@
       cursor:pointer;
       color:#1449ff;
       font-family:'Outfit',sans-serif;
-      font-weight:400;
-      transition:padding 0.6s ease, font-weight 0.6s ease;
+      --wght:400;
+      --wdth:100;
+      font-variation-settings:'wght' var(--wght),'wdth' var(--wdth);
+      transition:font-variation-settings 0.4s ease, transform 0.4s ease;
       border-radius:8px;
+      display:inline-flex;
     }
     .tab span {
       display:inline-block;
-      padding:0 2px;
-      transition:padding 0.6s ease, font-weight 0.6s ease;
+      --wght:inherit;
+      --wdth:inherit;
+      font-variation-settings:'wght' var(--wght),'wdth' var(--wdth);
+      transition:font-variation-settings 0.4s ease, transform 0.4s ease;
     }
     .tab + .tab::before {
       content:"";
@@ -65,12 +70,14 @@
       background:#1449ff66;
     }
     .tab:hover {
-      font-weight:800;
-      padding:10px 80px;
+      --wdth:500;
+      --wght:700;
+      transform:scaleX(1.2);
     }
     .tab span:hover {
-      font-weight:800;
-      padding:0 20px;
+      --wdth:800;
+      --wght:800;
+      transform:scaleX(1.4);
     }
     /* Glass overlay */
     .glass { position:fixed; top:0; left:0; width:100vw; height:100vh; backdrop-filter:blur(20px) brightness(0.95); opacity:0; transition:opacity 0.8s ease-in-out; pointer-events:none; z-index:2; }
@@ -120,6 +127,28 @@
       setTimeout(logoTick, 120);
     }
     logoTick();
+
+    const tabs = Array.from(document.querySelectorAll('.tab'));
+    const letters = Array.from(document.querySelectorAll('.tab span'));
+
+    document.addEventListener('mousemove', e => {
+      tabs.forEach(tab => {
+        const r = tab.getBoundingClientRect();
+        const cx = r.left + r.width/2;
+        const cy = r.top + r.height/2;
+        const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+        const weight = 400 + Math.max(0, 1 - dist/150) * 400;
+        tab.style.setProperty('--wght', weight.toFixed(0));
+      });
+      letters.forEach(letter => {
+        const r = letter.getBoundingClientRect();
+        const cx = r.left + r.width/2;
+        const cy = r.top + r.height/2;
+        const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+        const weight = 400 + Math.max(0, 1 - dist/80) * 400;
+        letter.style.setProperty('--wght', weight.toFixed(0));
+      });
+    });
     const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, antialias:true }); bgRenderer.setClearColor(0xffffff);
     const fgRenderer = new THREE.WebGLRenderer({ canvas: fgCanvas, antialias:true, alpha:true }); fgRenderer.setClearColor(0,0);
     const scene = new THREE.Scene();
