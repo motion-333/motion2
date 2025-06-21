@@ -23,9 +23,9 @@
       background:linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(255,255,255,0));
       pointer-events:none; z-index:-1;
     }
-    #logo { margin-left:20px; color:#00bfff; font-family:'Outfit',sans-serif; font-size:20px; letter-spacing:2px; }
-    #tabs { flex:1; display:flex; justify-content:center; }
-    .tab { margin:0 20px; cursor:pointer; color:#00bfff; display:inline-block; }
+    #logo { margin-left:20px; color:#1449ff; font-family:'Outfit',sans-serif; font-size:20px; letter-spacing:2px; }
+    #tabs { flex:1; display:flex; justify-content:center; transition:transform 0.3s; }
+    .tab { margin:0 20px; cursor:pointer; color:#1449ff; display:flex; }
     .tab span {
       display:inline-block;
       font-family:'Outfit',sans-serif;
@@ -33,15 +33,15 @@
       width:calc(1ch * var(--scale));
       transform:scaleX(var(--scale));
       font-variation-settings:'wght' 400,'wdth' 100;
-      transition:font-variation-settings 0.4s, transform 0.6s cubic-bezier(0.22,1,0.36,1), width 0.6s;
+      transition:font-variation-settings 0.3s, transform 0.3s, width 0.3s;
     }
     .tab:hover span {
-      --scale:10;
-      font-variation-settings:'wght' 700,'wdth' 1000;
+      --scale:1.3;
+      font-variation-settings:'wght' 600,'wdth' 125;
     }
     .tab span:hover {
-      --scale:20;
-      font-variation-settings:'wght' 700,'wdth' 2000;
+      --scale:1.6;
+      font-variation-settings:'wght' 700,'wdth' 150;
     }
     /* Glass overlay */
     .glass { position:fixed; top:0; left:0; width:100vw; height:100vh; backdrop-filter:blur(20px) brightness(0.95); opacity:0; transition:opacity 0.8s ease-in-out; pointer-events:none; z-index:2; }
@@ -68,6 +68,17 @@
   <script>
     // Renderer & scene setup
     const bgCanvas = document.getElementById('bgCanvas'), fgCanvas = document.getElementById('fgCanvas'), glass = document.getElementById('glass');
+    const tabsEl = document.getElementById('tabs');
+    const tabEls = Array.from(tabsEl.querySelectorAll('.tab'));
+    tabEls.forEach(t => {
+      t.addEventListener('mouseenter', () => {
+        const rect = t.getBoundingClientRect();
+        const cRect = tabsEl.getBoundingClientRect();
+        const offset = cRect.left + cRect.width/2 - (rect.left + rect.width/2);
+        tabsEl.style.transform = `translateX(${offset}px)`;
+      });
+      t.addEventListener('mouseleave', () => { tabsEl.style.transform = ''; });
+    });
     const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, antialias:true }); bgRenderer.setClearColor(0xffffff);
     const fgRenderer = new THREE.WebGLRenderer({ canvas: fgCanvas, antialias:true, alpha:true }); fgRenderer.setClearColor(0,0);
     const scene = new THREE.Scene();
