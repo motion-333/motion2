@@ -15,7 +15,13 @@
       background:rgba(255,255,255,0.1);
       -webkit-mask-image:linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0));
               mask-image:linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0));
-      z-index:4;
+      z-index:5;
+    }
+    #topbar::after {
+      content:"";
+      position:absolute; top:0; left:0; right:0; bottom:-30px;
+      background:linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(255,255,255,0));
+      pointer-events:none; z-index:-1;
     }
     #logo { margin-left:20px; color:#00bfff; font-family:'Outfit',sans-serif; font-size:20px; letter-spacing:2px; }
     #tabs { flex:1; display:flex; justify-content:center; }
@@ -23,16 +29,19 @@
     .tab span {
       display:inline-block;
       font-family:'Outfit',sans-serif;
+      --scale:1;
+      width:calc(1ch * var(--scale));
+      transform:scaleX(var(--scale));
       font-variation-settings:'wght' 400,'wdth' 100;
-      transition:font-variation-settings 0.4s, transform 0.6s cubic-bezier(0.22,1,0.36,1);
+      transition:font-variation-settings 0.4s, transform 0.6s cubic-bezier(0.22,1,0.36,1), width 0.6s;
     }
     .tab:hover span {
+      --scale:10;
       font-variation-settings:'wght' 700,'wdth' 1000;
-      transform:scaleX(10);
     }
     .tab span:hover {
+      --scale:20;
       font-variation-settings:'wght' 700,'wdth' 2000;
-      transform:scaleX(20);
     }
     /* Glass overlay */
     .glass { position:fixed; top:0; left:0; width:100vw; height:100vh; backdrop-filter:blur(20px) brightness(0.95); opacity:0; transition:opacity 0.8s ease-in-out; pointer-events:none; z-index:2; }
