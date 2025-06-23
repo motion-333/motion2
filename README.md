@@ -1,12 +1,18 @@
 # motion2
 
-This repository contains a simple script `link_model_folders.py` that associates
-modelized folders defined in `models.json` with actual directories under
-`static/pf/`. Running the script will ensure each model has a corresponding
-folder inside `static/pf/` and prints the mapping.
+This repository provides utilities for working with the `static/pf` folder.
+
+- `link_model_folders.py` will create directories listed in `models.json` under
+  `static/pf`.
+- `generate_index_html.py` scans `static/pf` and creates `index_checkpoint.html`
+  listing all existing folders.
 
 ## Usage
 
+Add or remove folders inside `static/pf/` manually and run:
+
 ```bash
-python link_model_folders.py
+python generate_index_html.py
 ```
+
+Open `index_checkpoint.html` in your browser to see the list.
