@@ -88,6 +88,7 @@
     #fgCanvas { z-index:3; pointer-events:none; }
     #labels { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:4; }
     .folder-label { position:absolute; font-family:'Outfit',sans-serif; color:#1449ff; font-size:14px; white-space:nowrap; transform:translate(-50%,0); }
+    .folder-label span { display:inline-block; --wght:400; --wdth:100; font-variation-settings:'wght' var(--wght),'wdth' var(--wdth); transition:font-variation-settings 0.2s ease; }
   </style>
 </head>
 <body>
@@ -134,6 +135,8 @@
 
     const tabs = Array.from(document.querySelectorAll('.tab'));
     const letters = Array.from(document.querySelectorAll('.tab span'));
+    let folders = [];
+    let magnetized = null;
 
     document.addEventListener('mousemove', e => {
       tabs.forEach(tab => {
@@ -151,6 +154,26 @@
         const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
         const weight = 400 + Math.max(0, 1 - dist/80) * 400;
         letter.style.setProperty('--wght', weight.toFixed(0));
+      });
+      folders.forEach(f=>{
+        const spans = f.userData.letters || [];
+        if(magnetized===f || f.userData.focused){
+          spans.forEach(s=>{
+            const r = s.getBoundingClientRect();
+            const cx = r.left + r.width/2;
+            const cy = r.top + r.height/2;
+            const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+            const wght = 400 + Math.max(0, 1 - dist/80) * 400;
+            const wdth = 100 + Math.max(0, 1 - dist/80) * 100;
+            s.style.setProperty('--wght', wght.toFixed(0));
+            s.style.setProperty('--wdth', wdth.toFixed(0));
+          });
+        } else {
+          spans.forEach(s=>{
+            s.style.setProperty('--wght','400');
+            s.style.setProperty('--wdth','100');
+          });
+        }
       });
     });
     const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, antialias:true }); bgRenderer.setClearColor(0xffffff);
@@ -175,7 +198,7 @@
 
     // Raycaster & cursor
     const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), cursor3D = new THREE.Vector3();
-    let targetMouse = {x:0,y:0}, currentMouse = {x:0,y:0}, magnetized = null;
+    let targetMouse = {x:0,y:0}, currentMouse = {x:0,y:0};
     window.addEventListener('mousemove', e => {
       const nx = (e.clientX/window.innerWidth - 0.5)*2;
       const ny = -(e.clientY/window.innerHeight - 0.5)*2;
@@ -230,15 +253,16 @@
 
     const folderNames = ["model1", "model2"];
     // create and add folders
-    const folders = [];
+    folders = [];
     for(const name of folderNames){
       const f = createFolder();
       f.userData.name = name;
       const label = document.createElement('div');
       label.className = 'folder-label';
-      label.textContent = name;
+      label.innerHTML = [...name].map(ch=>`<span>${ch}</span>`).join('');
       labelsDiv.appendChild(label);
       f.userData.label = label;
+      f.userData.letters = label.querySelectorAll('span');
       scene.add(f);
       folders.push(f);
     }
@@ -252,8 +276,15 @@
         const label = f.userData.label;
         const v = f.position.clone();
         v.project(camera);
-        const x = (v.x * 0.5 + 0.5) * window.innerWidth;
-        const y = (-v.y * 0.5 + 0.5) * window.innerHeight + 30;
+        let x = (v.x * 0.5 + 0.5) * window.innerWidth;
+        let y = (-v.y * 0.5 + 0.5) * window.innerHeight + 20;
+        if(f.userData.focused){
+          x += 60;
+          y -= 20;
+          label.style.transform = 'translate(0,0) scale(2)';
+        } else {
+          label.style.transform = 'translate(-50%,0) scale(1)';
+        }
         label.style.left = `${x}px`;
         label.style.top = `${y}px`;
         label.style.display = f.visible ? 'block' : 'none';
