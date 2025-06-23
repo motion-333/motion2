@@ -37,7 +37,9 @@
       white-space:nowrap;
       transform:translate(-50%,0);
       transition:transform 0.3s ease;
+      pointer-events:none;
     }
+    .folder-label.focused{ pointer-events:auto; display:flex; justify-content:center; }
     .folder-label span {
       display:inline-block;
       --wght:400;
@@ -71,12 +73,11 @@
     #frame .title-rect {
       position:absolute;
       top:0;
-      left:20vh;
+      left:calc(20vh - 2px);
       height:20vh;
-      width:calc(100% - 20vh);
+      width:calc(100% - 20vh + 2px);
       box-sizing:border-box;
       border:2px solid #1449ff;
-      border-left:none;
     }
   </style>
 </head>
@@ -120,7 +121,7 @@
     let folders = [];
     let magnetized = null;
 
-    document.addEventListener('mousemove', e => {
+  document.addEventListener('mousemove', e => {
       folders.forEach(f=>{
         const spans = f.userData.letters || [];
         if((magnetized===f || f.userData.hovered) && !f.userData.focused){
@@ -141,6 +142,23 @@
           });
         }
       });
+  });
+
+    labelsDiv.addEventListener('mousemove', e=>{
+      const active = folders.find(f=>f.userData.focused);
+      if(!active) return;
+      active.userData.letters.forEach(l=>{
+        const r = l.getBoundingClientRect();
+        const cx = r.left + r.width/2;
+        const dist = Math.abs(e.clientX - cx);
+        const closeness = Math.max(0, 1 - dist/100);
+        const wd = 80 + closeness*120;
+        l.style.setProperty('--wdth', wd.toFixed(0));
+      });
+    });
+
+    labelsDiv.addEventListener('mouseleave', ()=>{
+      folders.forEach(f=>f.userData.letters && f.userData.letters.forEach(l=>l.style.setProperty('--wdth','100')));
     });
     const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, antialias:true }); bgRenderer.setClearColor(0xffffff);
     const fgRenderer = new THREE.WebGLRenderer({ canvas: fgCanvas, antialias:true, alpha:true }); fgRenderer.setClearColor(0,0);
@@ -236,27 +254,55 @@
 
     // intro animation
     const introDur=3000, scatterDur=2000;
-    const startTime=performance.now();
+const startTime=performance.now();
+
+    const targetDepth = 8;
+    function squareWorldPos(){
+      const frameRect = frame.getBoundingClientRect();
+      const sq = window.innerHeight * 0.2;
+      const cx = frameRect.left + sq/2;
+      const cy = frameRect.top + sq/2;
+      const ndc = {
+        x: (cx / window.innerWidth) * 2 - 1,
+        y: -(cy / window.innerHeight) * 2 + 1
+      };
+      raycaster.setFromCamera(ndc, camera);
+      return raycaster.ray.origin.clone().add(raycaster.ray.direction.multiplyScalar(targetDepth));
+    }
 
     function updateLabels(){
       folders.forEach(f=>{
         const label = f.userData.label;
-        const v = f.position.clone();
-        v.project(camera);
-        let x = (v.x * 0.5 + 0.5) * window.innerWidth;
-        let y = (-v.y * 0.5 + 0.5) * window.innerHeight + 12;
         if(f.userData.focused){
           const frameRect = frame.getBoundingClientRect();
           const sq = window.innerHeight * 0.2;
-          x = frameRect.left + sq + (frameRect.width - sq)/2;
-          y = (-v.y * 0.5 + 0.5) * window.innerHeight;
-          label.style.transform = 'translate(-50%,-50%) scale(6)';
+          const titleW = frameRect.width - sq;
+          const x = frameRect.left + sq + titleW/2;
+          const y = frameRect.top + sq/2;
+          if(!label.dataset.baseW){
+            label.dataset.baseW = label.offsetWidth;
+            label.dataset.baseH = label.offsetHeight;
+          }
+          const sx = titleW / label.dataset.baseW;
+          const sy = sq / label.dataset.baseH;
+          label.style.transform = `translate(-50%,-50%) scale(${sx},${sy})`;
+          label.classList.add('focused');
+          label.style.left = `${x}px`;
+          label.style.top = `${y}px`;
+          label.style.display = 'block';
+          label.style.pointerEvents = 'auto';
         } else {
+          const v = f.position.clone();
+          v.project(camera);
+          const x = (v.x * 0.5 + 0.5) * window.innerWidth;
+          const y = (-v.y * 0.5 + 0.5) * window.innerHeight + 12;
+          label.style.left = `${x}px`;
+          label.style.top = `${y}px`;
           label.style.transform = 'translate(-50%,0) scale(1)';
+          label.classList.remove('focused');
+          label.style.pointerEvents = 'none';
+          label.style.display = f.visible ? 'block' : 'none';
         }
-        label.style.left = `${x}px`;
-        label.style.top = `${y}px`;
-        label.style.display = f.visible ? 'block' : 'none';
       });
     }
 
@@ -270,7 +316,7 @@
         ud.focused = true;
         ud.clickStart = performance.now();
         ud.startPos.copy(f.position);
-        ud.targetPos.set(-4,1.8,8);
+        ud.targetPos.copy(squareWorldPos());
         glass.classList.add('visible');
         frame.classList.add('active');
         console.log('Selected folder:', ud.name);
@@ -367,8 +413,14 @@
           }
           // focused
           if(ud.focused) {
+            const target = squareWorldPos();
+            ud.targetPos.copy(target);
             const t = Math.min((now-ud.clickStart)/ud.duration,1);
-            f.position.lerpVectors(ud.startPos, ud.targetPos, ease(t));
+            f.position.lerpVectors(ud.startPos, target, ease(t));
+            f.rotation.x = 0;
+            f.rotation.z = 0;
+            f.rotation.y = targetMouse.x * 0.4;
+            if(t>=1) f.position.copy(target);
             return;
           }
           // hover open
