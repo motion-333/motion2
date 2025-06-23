@@ -35,11 +35,19 @@
       color:#1449ff;
       font-size:14px;
       white-space:nowrap;
-      transform:translate(-50%,0);
-      transition:left 0.6s ease, top 0.6s ease, transform 0.6s ease;
+      transform:translate(-50%,0) translateZ(0);
+      transition:transform 0.2s ease;
+      will-change:transform, left, top;
+      -webkit-font-smoothing: antialiased;
+      backface-visibility:hidden;
       pointer-events:none;
     }
-    .folder-label.focused{ pointer-events:auto; display:flex; justify-content:center; }
+    .folder-label.focused{
+      pointer-events:auto;
+      display:flex;
+      justify-content:center;
+      transition:transform 0.2s ease;
+    }
     .folder-label span {
       display:inline-block;
       --wght:400;
@@ -73,9 +81,9 @@
     #frame .title-rect {
       position:absolute;
       top:0;
-      left:calc(20vh - 2px);
+      left:calc(20vh - 4px);
       height:20vh;
-      width:calc(100% - 20vh + 2px);
+      width:calc(100% - 20vh + 4px);
       box-sizing:border-box;
       border:2px solid #1449ff;
     }
@@ -142,22 +150,21 @@
           });
         }
       });
+      const active = folders.find(f=>f.userData.focused);
+      if(active){
+        active.userData.letters.forEach(l=>{
+          const r = l.getBoundingClientRect();
+          const cx = r.left + r.width/2;
+          const dist = Math.abs(e.clientX - cx);
+          const closeness = Math.max(0, 1 - dist/100);
+          const wd = 80 + closeness*120;
+          const wght = 400 + closeness*400;
+          l.style.setProperty('--wdth', wd.toFixed(0));
+          l.style.setProperty('--wght', wght.toFixed(0));
+        });
+      }
   });
 
-    labelsDiv.addEventListener('mousemove', e=>{
-      const active = folders.find(f=>f.userData.focused);
-      if(!active) return;
-      active.userData.letters.forEach(l=>{
-        const r = l.getBoundingClientRect();
-        const cx = r.left + r.width/2;
-        const dist = Math.abs(e.clientX - cx);
-        const closeness = Math.max(0, 1 - dist/100);
-        const wd = 80 + closeness*120;
-        const wght = 400 + closeness*400;
-        l.style.setProperty('--wdth', wd.toFixed(0));
-        l.style.setProperty('--wght', wght.toFixed(0));
-      });
-    });
 
     labelsDiv.addEventListener('mouseleave', ()=>{
       folders.forEach(f=>{
@@ -265,7 +272,7 @@
     const introDur=3000, scatterDur=2000;
 const startTime=performance.now();
 
-    const targetDepth = 8;
+    const targetDepth = 9.5;
     function squareWorldPos(){
       const frameRect = frame.getBoundingClientRect();
       const sq = window.innerHeight * 0.2;
@@ -277,7 +284,7 @@ const startTime=performance.now();
       };
       raycaster.setFromCamera(ndc, camera);
       const pos = raycaster.ray.origin.clone().add(raycaster.ray.direction.multiplyScalar(targetDepth));
-      pos.y -= 0.9;
+      pos.y -= 0.8;
       return pos;
     }
 
