@@ -2,7 +2,6 @@ from pathlib import Path
 import json
 from link_model_folders import associate_models
 
-STATIC_DIR = Path('static/pf')
 TEMPLATE_FILE = Path('index_template.html')
 INDEX_FILE = Path('index.html')
 
@@ -11,7 +10,7 @@ def generate_index():
     mapping = associate_models()
     folders = sorted(mapping.keys())
     template = TEMPLATE_FILE.read_text()
-    html = template.replace('FOLDER_NAMES_PLACEHOLDER', json.dumps(sorted(folders)))
+    html = template.replace('FOLDER_NAMES_PLACEHOLDER', json.dumps(folders))
     INDEX_FILE.write_text(html)
     print(f"Wrote {INDEX_FILE} with {len(folders)} folders.")
 

@@ -36,7 +36,7 @@
       font-size:14px;
       white-space:nowrap;
       transform:translate(-50%,0);
-      transition:transform 0.3s ease;
+      transition:left 0.6s ease, top 0.6s ease, transform 0.6s ease;
       pointer-events:none;
     }
     .folder-label.focused{ pointer-events:auto; display:flex; justify-content:center; }
@@ -45,7 +45,7 @@
       --wght:400;
       --wdth:100;
       font-variation-settings:'wght' var(--wght),'wdth' var(--wdth);
-      transition:font-variation-settings 0.2s ease, transform 0.2s ease;
+      transition:font-variation-settings 0.3s ease, transform 0.3s ease;
     }
     #frame {
       position:fixed;
@@ -153,12 +153,21 @@
         const dist = Math.abs(e.clientX - cx);
         const closeness = Math.max(0, 1 - dist/100);
         const wd = 80 + closeness*120;
+        const wght = 400 + closeness*400;
         l.style.setProperty('--wdth', wd.toFixed(0));
+        l.style.setProperty('--wght', wght.toFixed(0));
       });
     });
 
     labelsDiv.addEventListener('mouseleave', ()=>{
-      folders.forEach(f=>f.userData.letters && f.userData.letters.forEach(l=>l.style.setProperty('--wdth','100')));
+      folders.forEach(f=>{
+        if(f.userData.letters){
+          f.userData.letters.forEach(l=>{
+            l.style.setProperty('--wdth','100');
+            l.style.setProperty('--wght','400');
+          });
+        }
+      });
     });
     const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, antialias:true }); bgRenderer.setClearColor(0xffffff);
     const fgRenderer = new THREE.WebGLRenderer({ canvas: fgCanvas, antialias:true, alpha:true }); fgRenderer.setClearColor(0,0);
@@ -267,7 +276,9 @@ const startTime=performance.now();
         y: -(cy / window.innerHeight) * 2 + 1
       };
       raycaster.setFromCamera(ndc, camera);
-      return raycaster.ray.origin.clone().add(raycaster.ray.direction.multiplyScalar(targetDepth));
+      const pos = raycaster.ray.origin.clone().add(raycaster.ray.direction.multiplyScalar(targetDepth));
+      pos.y -= 0.9;
+      return pos;
     }
 
     function updateLabels(){
