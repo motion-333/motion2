@@ -45,18 +45,53 @@
       font-variation-settings:'wght' var(--wght),'wdth' var(--wdth);
       transition:font-variation-settings 0.2s ease, transform 0.2s ease;
     }
+    #frame {
+      position:fixed;
+      top:50%;
+      left:50%;
+      width:75vw;
+      height:95vh;
+      transform:translate(-50%,-50%);
+      border:2px solid #1449ff;
+      box-sizing:border-box;
+      pointer-events:none;
+      display:none;
+      z-index:2;
+    }
+    #frame.active { display:block; }
+    #frame .square {
+      position:absolute;
+      top:0;
+      left:0;
+      width:20vh;
+      height:20vh;
+      box-sizing:border-box;
+      border:2px solid #1449ff;
+    }
+    #frame .title-rect {
+      position:absolute;
+      top:0;
+      left:20vh;
+      height:20vh;
+      width:calc(100% - 20vh);
+      box-sizing:border-box;
+      border:2px solid #1449ff;
+      border-left:none;
+    }
   </style>
 </head>
 <body>
   <div id="logo">['[]']'|':[][\]</div>
   <div class="glass" id="glass"></div>
   <canvas id="bgCanvas"></canvas>
+  <div id="frame"><div class="square"></div><div class="title-rect"></div></div>
   <canvas id="fgCanvas"></canvas>
   <div id="labels"></div>
   <script src="https://unpkg.com/three@0.148.0/build/three.min.js"></script>
   <script>
     // Renderer & scene setup
     const bgCanvas = document.getElementById('bgCanvas'), fgCanvas = document.getElementById('fgCanvas'), glass = document.getElementById('glass');
+    const frame = document.getElementById('frame');
     const labelsDiv = document.getElementById('labels');
     const logoEl = document.getElementById('logo');
     const logoText = "['[]']'|':[][\\]";
@@ -211,9 +246,11 @@
         let x = (v.x * 0.5 + 0.5) * window.innerWidth;
         let y = (-v.y * 0.5 + 0.5) * window.innerHeight + 12;
         if(f.userData.focused){
-          x += 120;
+          const frameRect = frame.getBoundingClientRect();
+          const sq = window.innerHeight * 0.2;
+          x = frameRect.left + sq + (frameRect.width - sq)/2;
           y = (-v.y * 0.5 + 0.5) * window.innerHeight;
-          label.style.transform = 'translate(0,-50%) scale(6)';
+          label.style.transform = 'translate(-50%,-50%) scale(6)';
         } else {
           label.style.transform = 'translate(-50%,0) scale(1)';
         }
@@ -235,6 +272,7 @@
         ud.startPos.copy(f.position);
         ud.targetPos.set(-4,1.8,8);
         glass.classList.add('visible');
+        frame.classList.add('active');
         console.log('Selected folder:', ud.name);
       } else {
         ud.returning = true;
@@ -242,6 +280,7 @@
         ud.returnFrom.copy(f.position);
         ud.returnTo.copy(ud.startPos);
         glass.classList.remove('visible');
+        frame.classList.remove('active');
       }
     });
 
@@ -323,7 +362,7 @@
           if(ud.returning) {
             const t = Math.min((now-ud.returnStart)/ud.returnDuration,1);
             f.position.lerpVectors(ud.returnFrom, ud.returnTo, ease(t));
-            if(t>=1) { ud.returning=false; ud.focused=false; }
+            if(t>=1) { ud.returning=false; ud.focused=false; frame.classList.remove('active'); }
             return;
           }
           // focused
