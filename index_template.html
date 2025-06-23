@@ -36,14 +36,14 @@
       font-size:14px;
       white-space:nowrap;
       transform:translate(-50%,0);
-      transition:transform 0.3s ease, left 0.3s ease, top 0.3s ease;
+      transition:transform 0.3s ease;
     }
     .folder-label span {
       display:inline-block;
       --wght:400;
       --wdth:100;
       font-variation-settings:'wght' var(--wght),'wdth' var(--wdth);
-      transition:font-variation-settings 0.2s ease;
+      transition:font-variation-settings 0.2s ease, transform 0.2s ease;
     }
   </style>
 </head>
@@ -95,14 +95,14 @@
             const cy = r.top + r.height/2;
             const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
             const wght = 400 + Math.max(0, 1 - dist/80) * 400;
-            const wdth = 100 + Math.max(0, 1 - dist/80) * 100;
+            const widen = 1 + Math.max(0, 1 - dist/80) * 0.5;
             s.style.setProperty('--wght', wght.toFixed(0));
-            s.style.setProperty('--wdth', wdth.toFixed(0));
+            s.style.transform = `scaleX(${widen.toFixed(2)})`;
           });
         } else {
           spans.forEach(s=>{
             s.style.setProperty('--wght','400');
-            s.style.setProperty('--wdth','100');
+            s.style.transform = 'scaleX(1)';
           });
         }
       });
@@ -211,9 +211,9 @@
         let x = (v.x * 0.5 + 0.5) * window.innerWidth;
         let y = (-v.y * 0.5 + 0.5) * window.innerHeight + 12;
         if(f.userData.focused){
-          x += 60;
+          x += 120;
           y = (-v.y * 0.5 + 0.5) * window.innerHeight;
-          label.style.transform = 'translate(0,-50%) scale(3)';
+          label.style.transform = 'translate(0,-50%) scale(6)';
         } else {
           label.style.transform = 'translate(-50%,0) scale(1)';
         }
