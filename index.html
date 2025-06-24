@@ -81,15 +81,15 @@
       box-sizing:border-box;
       border:2px solid #1449ff;
     }
-    #frame .title-rect {
-      position:absolute;
-      top:0;
-      left:calc(20vh - 4px);
-      height:20vh;
-      width:calc(100% - 20vh + 4px);
-      box-sizing:border-box;
-      border:2px solid #1449ff;
-    }
+      #frame .title-rect {
+        position:absolute;
+        top:0;
+        left:20vh;
+        height:20vh;
+        width:calc(100% - 20vh);
+        box-sizing:border-box;
+        border:2px solid #1449ff;
+      }
   </style>
 </head>
 <body>
@@ -315,7 +315,7 @@ const startTime=performance.now();
           }
           const sx = titleW / label.dataset.baseW;
           const sy = sq / label.dataset.baseH;
-          label.style.transform = `translate(-50%,-50%) scale(${sx},${sy})`;
+          label.style.transform = `translate(-50%,-50%) translateZ(0.1px) scale(${sx},${sy})`;
           label.classList.add('focused');
           label.style.left = `${x}px`;
           label.style.top = `${y}px`;
@@ -328,7 +328,7 @@ const startTime=performance.now();
           const y = (-v.y * 0.5 + 0.5) * window.innerHeight + 12;
           label.style.left = `${x}px`;
           label.style.top = `${y}px`;
-          label.style.transform = 'translate(-50%,0) scale(1)';
+          label.style.transform = 'translate(-50%,0) translateZ(0.1px) scale(1)';
           label.classList.remove('focused');
           label.style.pointerEvents = 'none';
           label.style.display = f.visible ? 'block' : 'none';
@@ -447,11 +447,11 @@ const startTime=performance.now();
             ud.targetPos.copy(target);
             const t = Math.min((now-ud.clickStart)/ud.duration,1);
             f.position.lerpVectors(ud.startPos, target, ease(t));
-            f.rotation.x = 0;
-            f.rotation.z = 0;
             const proj = f.position.clone().project(camera);
             const relX = mouse.x - proj.x;
-            f.rotation.y = relX * 0.4;
+            f.rotation.x = THREE.MathUtils.degToRad(-15);
+            f.rotation.z = THREE.MathUtils.degToRad(-5);
+            f.rotation.y = THREE.MathUtils.degToRad(15) + relX * 0.4;
             if(t>=1) f.position.copy(target);
             return;
           }
