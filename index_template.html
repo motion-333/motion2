@@ -46,7 +46,10 @@
     }
     .folder-label.focused{
       pointer-events:auto;
+      position:absolute;
+      inset:0;
       display:flex;
+      align-items:center;
       justify-content:center;
       transition:transform 0.3s ease, font-size 0.3s ease, opacity 0.2s ease;
     }
@@ -94,6 +97,9 @@
       box-sizing:border-box;
       border:2px solid #1449ff;
       overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
     }
     #frame .bottom-rect {
       position:absolute;
@@ -141,6 +147,7 @@
     const bgCanvas = document.getElementById('bgCanvas'), fgCanvas = document.getElementById('fgCanvas'), glass = document.getElementById('glass');
     const frame = document.getElementById('frame');
     const bottomRect = frame.querySelector('.bottom-rect');
+    const titleRect = frame.querySelector('.title-rect');
     const gridEl = bottomRect.querySelector('.grid');
     const labelsDiv = document.getElementById('labels');
     const logoEl = document.getElementById('logo');
@@ -473,27 +480,24 @@ const startTime=performance.now();
       folders.forEach(f=>{
         const label = f.userData.label;
         if(f.userData.focused){
-          const frameRect = frame.getBoundingClientRect();
-          const sq = window.innerHeight * 0.2;
-          const titleW = frameRect.width - sq;
-          const x = frameRect.left + sq + titleW/2;
-          const y = frameRect.top + sq/2;
-          const sx = titleW / label.dataset.baseW;
-          const sy = sq / label.dataset.baseH;
-          label.style.width = `${titleW}px`;
-          label.style.height = `${sq}px`;
+          if(label.parentElement!==titleRect){
+            titleRect.innerHTML='';
+            titleRect.appendChild(label);
+          }
+          const rect = titleRect.getBoundingClientRect();
+          const sy = rect.height / label.dataset.baseH;
+          label.style.position = 'absolute';
+          label.style.left = '50%';
+          label.style.top = '50%';
+          label.style.width = `${rect.width}px`;
+          label.style.height = `${rect.height}px`;
           label.style.fontSize = `${label.dataset.baseSize * sy}px`;
-          label.style.transform = `translate(-50%,-50%) scaleX(${(sx/sy).toFixed(4)})`;
+          label.style.transform = 'translate(-50%,-50%)';
           label.classList.add('focused');
-          label.style.left = `${x}px`;
-          label.style.top = `${y}px`;
-          label.style.overflow = 'hidden';
-          label.style.display = 'flex';
-          label.style.alignItems = 'center';
-          label.style.justifyContent = 'center';
           label.style.pointerEvents = 'auto';
           if(label.refreshLayout) label.refreshLayout();
         } else {
+          if(label.parentElement!==labelsDiv) labelsDiv.appendChild(label);
           const v = f.position.clone();
           v.project(camera);
           const x = (v.x * 0.5 + 0.5) * window.innerWidth;
@@ -502,12 +506,10 @@ const startTime=performance.now();
           label.style.top = `${y}px`;
           label.style.width = 'auto';
           label.style.height = 'auto';
-          label.style.transform = 'translate(-50%,0) scale(1)';
+          label.style.transform = 'translate(-50%,0)';
           label.style.fontSize = `${label.dataset.baseSize}px`;
           label.classList.remove('focused');
           label.style.pointerEvents = 'none';
-          label.style.overflow = 'visible';
-          label.style.display = f.visible ? 'block' : 'none';
           if(label.refreshLayout) label.refreshLayout();
         }
       });
@@ -531,6 +533,11 @@ const startTime=performance.now();
         frame.classList.add('active');
         activeFolder = ud.name;
         loadLayout(ud.name);
+        const label = ud.label;
+        titleRect.innerHTML = '';
+        titleRect.appendChild(label);
+        label.classList.add('focused');
+        if(label.refreshLayout) requestAnimationFrame(label.refreshLayout);
         console.log('Selected folder:', ud.name);
       } else {
         ud.returning = true;
@@ -542,11 +549,14 @@ const startTime=performance.now();
         gridEl.innerHTML = '';
         activeFolder = null;
         const label = ud.label;
+        labelsDiv.appendChild(label);
+        label.classList.remove('focused');
         label.style.transition = 'transform 0.3s ease, font-size 0.3s ease, opacity 0s';
         label.style.opacity = 0;
         setTimeout(()=>{
           label.style.transition = 'transform 0.3s ease, font-size 0.3s ease, opacity 0.2s';
           label.style.opacity = 1;
+          if(label.refreshLayout) label.refreshLayout();
         }, 1000);
       }
     });
