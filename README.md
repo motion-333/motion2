@@ -15,6 +15,8 @@ This repository provides utilities for working with the `static/pf` folder.
   rectangle reveals a grid four times its own size. Moving the cursor near an
   edge pans the grid to show hidden squares so you can showcase images or
   videos beyond the initial view.
+  When leaving focus, the label hides instantly and fades back in after one
+  second.
 
 - `manage_layout.py` lets you assign images or videos to grid cells for a
   specific folder. Layout information is stored in `layouts/<folder>.json` as a
@@ -24,7 +26,8 @@ This repository provides utilities for working with the `static/pf` folder.
 - `builder.html` offers a drag-and-drop layout builder. It lists the folders
   found in `static/pf` and, when one is chosen, shows its files. Drag any item
   onto the 32×32 grid and it snaps to these small cells while keeping the item's
-  aspect ratio. The grid is visibly drawn with blue lines so alignment is easy.
+  aspect ratio. The grid is visibly drawn with 2 px blue lines so alignment is
+  easy.
   Items remain draggable and may overlap. The layout is stored in
   `localStorage` under `layout_<folder>` so `index.html` updates live when it
   changes.
