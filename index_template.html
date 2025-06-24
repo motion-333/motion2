@@ -95,7 +95,7 @@
       top:calc(20vh - 2px);
       left:-2px;
       width:calc(100% + 4px);
-      height:calc(100% - 20vh + 2px);
+      height:calc(100% - 20vh + 4px);
       box-sizing:border-box;
       border:2px solid #1449ff;
     }
@@ -324,12 +324,17 @@ const startTime=performance.now();
           const sx = titleW / label.dataset.baseW;
           const sy = sq / label.dataset.baseH;
           const scale = Math.min(sx, sy);
+          label.style.width = `${titleW}px`;
+          label.style.height = `${sq}px`;
           label.style.fontSize = `${label.dataset.baseSize * scale}px`;
           label.style.transform = `translate(-50%,-50%) scale(${scale})`;
           label.classList.add('focused');
           label.style.left = `${x}px`;
           label.style.top = `${y}px`;
-          label.style.display = 'block';
+          label.style.overflow = 'hidden';
+          label.style.display = 'flex';
+          label.style.alignItems = 'center';
+          label.style.justifyContent = 'center';
           label.style.pointerEvents = 'auto';
         } else {
           const v = f.position.clone();
@@ -338,10 +343,13 @@ const startTime=performance.now();
           const y = (-v.y * 0.5 + 0.5) * window.innerHeight + 12;
           label.style.left = `${x}px`;
           label.style.top = `${y}px`;
+          label.style.width = 'auto';
+          label.style.height = 'auto';
           label.style.transform = 'translate(-50%,0) scale(1)';
           label.style.fontSize = `${label.dataset.baseSize}px`;
           label.classList.remove('focused');
           label.style.pointerEvents = 'none';
+          label.style.overflow = 'visible';
           label.style.display = f.visible ? 'block' : 'none';
         }
       });
@@ -358,6 +366,8 @@ const startTime=performance.now();
         ud.clickStart = performance.now();
         ud.startPos.copy(f.position);
         ud.targetPos.copy(squareWorldPos());
+        f.rotation.y = 0;
+        f.rotation.z = 0;
         glass.classList.add('visible');
         frame.classList.add('active');
         console.log('Selected folder:', ud.name);
@@ -458,12 +468,18 @@ const startTime=performance.now();
             ud.targetPos.copy(target);
             const t = Math.min((now-ud.clickStart)/ud.duration,1);
             f.position.lerpVectors(ud.startPos, target, ease(t));
-            const proj = f.position.clone().project(camera);
-            const relX = mouse.x - proj.x;
-            const relY = mouse.y - proj.y;
-            f.rotation.x = THREE.MathUtils.degToRad(-2);
-            f.rotation.y = relX * 0.15;
-            f.rotation.z = -relY * 0.15;
+            if(t < 1) {
+              f.rotation.x = THREE.MathUtils.degToRad(-2);
+              f.rotation.y = 0;
+              f.rotation.z = 0;
+            } else {
+              const proj = f.position.clone().project(camera);
+              const relX = mouse.x - proj.x;
+              const relY = mouse.y - proj.y;
+              f.rotation.x = THREE.MathUtils.degToRad(-2);
+              f.rotation.y = relX * 0.15;
+              f.rotation.z = -relY * 0.15;
+            }
             if(t>=1) f.position.copy(target);
             return;
           }
