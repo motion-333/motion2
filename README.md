@@ -46,3 +46,14 @@ Follow the prompts to assign images or videos to grid cells. The page will load
 your layout when that folder is selected.
 
 Alternatively open `builder.html` in your browser to arrange items visually.
+When using the builder, make sure both `builder.html` and `index.html` are
+served from the same origin so they share the browser's `localStorage`. The
+easiest way is to start a simple HTTP server from the repository root:
+
+```bash
+python -m http.server
+```
+
+Then visit `http://localhost:8000/index.html` and `builder.html` in your
+browser. Layout changes saved in the builder will immediately appear on the
+main page.

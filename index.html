@@ -392,18 +392,28 @@ const startTime=performance.now();
       if(stored){
         try{ items = JSON.parse(stored); }catch(e){ items = []; }
       }
-      gridEl.innerHTML='';
-      items.forEach(it=>{
-        const div=document.createElement(it.path.endsWith('.mp4')?'video':'img');
-        if(div.tagName==='VIDEO'){div.src=`static/pf/${name}/${it.path}`;div.autoplay=true;div.loop=true;div.muted=true;}
-        else div.src=`static/pf/${name}/${it.path}`;
-        div.className='grid-item';
-        div.style.left=`${(it.x/CELL)*100}%`;
-        div.style.top=`${(it.y/CELL)*100}%`;
-        div.style.width=`${(it.w/CELL)*100}%`;
-        div.style.height=`${(it.h/CELL)*100}%`;
-        gridEl.appendChild(div);
-      });
+      function render(list){
+        gridEl.innerHTML='';
+        list.forEach(it=>{
+          const div=document.createElement(it.path.endsWith('.mp4')?'video':'img');
+          if(div.tagName==='VIDEO'){div.src=`static/pf/${name}/${it.path}`;div.autoplay=true;div.loop=true;div.muted=true;}
+          else div.src=`static/pf/${name}/${it.path}`;
+          div.className='grid-item';
+          div.style.left=`${(it.x/CELL)*100}%`;
+          div.style.top=`${(it.y/CELL)*100}%`;
+          div.style.width=`${(it.w/CELL)*100}%`;
+          div.style.height=`${(it.h/CELL)*100}%`;
+          gridEl.appendChild(div);
+        });
+      }
+      if(items.length){
+        render(items);
+      } else {
+        fetch(`layouts/${name}.json`)
+          .then(r=>r.ok?r.json():[])
+          .then(data=>{render(data);})
+          .catch(()=>{});
+      }
     }
 
     function updateLabels(){
