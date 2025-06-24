@@ -162,6 +162,8 @@
 
     let folders = [];
     let magnetized = null;
+    const CELL = 32;
+    let activeFolder = null;
 
     let gridX = -150, gridY = -150, targetGX = -150, targetGY = -150;
     function updateGrid(){
@@ -208,10 +210,16 @@
       });
       const active = folders.find(f=>f.userData.focused);
       if(active){
-        const label = active.userData.label;
         const spans = active.userData.letters;
         spans.forEach(s=>{
-          if(!s.matches(':hover')){ s.style.transform='scaleX(1)'; s.style.setProperty('--wght','400'); }
+          const r = s.getBoundingClientRect();
+          const cx = r.left + r.width/2;
+          const cy = r.top + r.height/2;
+          const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+          const wght = 400 + Math.max(0, 1 - dist/120) * 400;
+          const widen = 1 + Math.max(0, 1 - dist/120) * 1.0;
+          s.style.setProperty('--wght', wght.toFixed(0));
+          s.style.transform = `scaleX(${widen.toFixed(2)})`;
         });
       }
   });
@@ -379,23 +387,23 @@ const startTime=performance.now();
     }
 
     function loadLayout(name){
-      fetch(`layouts/${name}.json`)
-        .then(r=>r.ok?r.json():[])
-        .then(items=>{
-          gridEl.innerHTML='';
-          items.forEach(it=>{
-            const div=document.createElement(it.path.endsWith('.mp4')?'video':'img');
-            if(div.tagName==='VIDEO'){div.src=`static/pf/${name}/${it.path}`;div.autoplay=true;div.loop=true;div.muted=true;}
-            else div.src=`static/pf/${name}/${it.path}`;
-            div.className='grid-item';
-            div.style.left=`${(it.x/8)*100}%`;
-            div.style.top=`${(it.y/8)*100}%`;
-            div.style.width=`${(it.w/8)*100}%`;
-            div.style.height=`${(it.h/8)*100}%`;
-            gridEl.appendChild(div);
-          });
-        })
-        .catch(()=>{gridEl.innerHTML='';});
+      let items = [];
+      const stored = localStorage.getItem('layout_'+name);
+      if(stored){
+        try{ items = JSON.parse(stored); }catch(e){ items = []; }
+      }
+      gridEl.innerHTML='';
+      items.forEach(it=>{
+        const div=document.createElement(it.path.endsWith('.mp4')?'video':'img');
+        if(div.tagName==='VIDEO'){div.src=`static/pf/${name}/${it.path}`;div.autoplay=true;div.loop=true;div.muted=true;}
+        else div.src=`static/pf/${name}/${it.path}`;
+        div.className='grid-item';
+        div.style.left=`${(it.x/CELL)*100}%`;
+        div.style.top=`${(it.y/CELL)*100}%`;
+        div.style.width=`${(it.w/CELL)*100}%`;
+        div.style.height=`${(it.h/CELL)*100}%`;
+        gridEl.appendChild(div);
+      });
     }
 
     function updateLabels(){
@@ -456,6 +464,7 @@ const startTime=performance.now();
         f.rotation.z = 0;
         glass.classList.add('visible');
         frame.classList.add('active');
+        activeFolder = ud.name;
         loadLayout(ud.name);
         console.log('Selected folder:', ud.name);
       } else {
@@ -466,6 +475,7 @@ const startTime=performance.now();
         glass.classList.remove('visible');
         frame.classList.remove('active');
         gridEl.innerHTML = '';
+        activeFolder = null;
       }
     });
 
@@ -609,6 +619,11 @@ const startTime=performance.now();
       updateLabels();
       folders.forEach(f=>f.visible=true);
     }
+    window.addEventListener('storage', e => {
+      if(activeFolder && e.key === 'layout_'+activeFolder){
+        loadLayout(activeFolder);
+      }
+    });
     animate();
   </script>
 </body>

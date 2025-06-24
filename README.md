@@ -16,15 +16,16 @@ This repository provides utilities for working with the `static/pf` folder.
   videos beyond the initial view.
 
 - `manage_layout.py` lets you assign images or videos to grid cells for a
-  specific folder. Layout information is stored in `layouts/<folder>.json` and
-  loaded when the folder is selected in the interface.
+  specific folder. Layout information is stored in `layouts/<folder>.json` as a
+  fallback, but the pages now read layouts from the browser's `localStorage`
+  so updates made in the builder appear immediately.
 
 - `builder.html` offers a drag-and-drop layout builder. It lists the folders
   found in `static/pf` and, when one is chosen, shows its files. Drag any item
-  onto the grid and it will scale to a number of squares based on its aspect
-  ratio (e.g. a 4:5 photo spans 4×5 cells). Items remain draggable after
-  placement and may overlap. Click **Save** to download the resulting layout
-  JSON for the `layouts/` directory.
+  onto the 32×32 grid and it snaps to these small cells while keeping the item's
+  aspect ratio. Items stay draggable and may overlap. The layout is stored in
+  `localStorage` under `layout_<folder>` so `index.html` updates live when it
+  changes.
 
 ## Usage
 
