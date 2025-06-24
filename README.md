@@ -12,8 +12,9 @@ This repository provides utilities for working with the `static/pf` folder.
   displaying a centered frame with the folder on the left and the title
   filling the adjoining rectangle. When focused, the folder locks into the
   square portion of the frame and tilts slightly with the pointer. The bottom
-  rectangle now holds a scrollable grid where you can showcase images or
-  videos.
+  rectangle reveals a grid four times its own size. Moving the cursor near an
+  edge pans the grid to show hidden squares so you can showcase images or
+  videos beyond the initial view.
 
 - `manage_layout.py` lets you assign images or videos to grid cells for a
   specific folder. Layout information is stored in `layouts/<folder>.json` and

@@ -112,8 +112,8 @@
       position:absolute;
       top:0;
       left:0;
-      width:200%;
-      height:200%;
+      width:400%;
+      height:400%;
       display:grid;
       grid-template-columns:repeat(8,1fr);
       grid-template-rows:repeat(8,1fr);
@@ -172,7 +172,7 @@
     let folders = [];
     let magnetized = null;
 
-    let gridX = -50, gridY = -50, targetGX = -50, targetGY = -50;
+    let gridX = -150, gridY = -150, targetGX = -150, targetGY = -150;
     function updateGrid(){
       gridX += (targetGX - gridX)*0.1;
       gridY += (targetGY - gridY)*0.1;
@@ -188,11 +188,11 @@
       const r = bottomRect.getBoundingClientRect();
       const cell = Math.min(r.width, r.height)/4;
       if(e.clientX - r.left < cell) targetGX = Math.min(targetGX + 25, 0);
-      else if(r.right - e.clientX < cell) targetGX = Math.max(targetGX - 25, -100);
+      else if(r.right - e.clientX < cell) targetGX = Math.max(targetGX - 25, -300);
       if(e.clientY - r.top < cell) targetGY = Math.min(targetGY + 25, 0);
-      else if(r.bottom - e.clientY < cell) targetGY = Math.max(targetGY - 25, -100);
+      else if(r.bottom - e.clientY < cell) targetGY = Math.max(targetGY - 25, -300);
     });
-    bottomRect.addEventListener('mouseleave', ()=>{ targetGX = -50; targetGY = -50; });
+    bottomRect.addEventListener('mouseleave', ()=>{ targetGX = -150; targetGY = -150; });
 
   document.addEventListener('mousemove', e => {
       folders.forEach(f=>{
