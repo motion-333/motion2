@@ -118,8 +118,8 @@
       grid-template-columns:repeat(8,1fr);
       grid-template-rows:repeat(8,1fr);
       transform:translate(-50%,-50%);
-      background-image:repeating-linear-gradient(#1449ff33 0 1px,transparent 1px 25%),
-                      repeating-linear-gradient(90deg,#1449ff33 0 1px,transparent 1px 25%);
+      background-image:repeating-linear-gradient(#1449ff 0 2px,transparent 2px 25%),
+                      repeating-linear-gradient(90deg,#1449ff 0 2px,transparent 2px 25%);
       background-size:calc(100%/8) calc(100%/8);
       pointer-events:none;
     }
@@ -176,18 +176,21 @@
     function updateGrid(){
       gridX += (targetGX - gridX)*0.1;
       gridY += (targetGY - gridY)*0.1;
-      gridEl.style.transform = `translate(${gridX}%, ${gridY}%)`;
+      const r = bottomRect.getBoundingClientRect();
+      const ratio = r.height / r.width;
+      const scaleX = ratio < 1 ? ratio : 1;
+      const scaleY = ratio > 1 ? 1/ratio : 1;
+      gridEl.style.transform = `translate(${gridX}%, ${gridY}%) scale(${scaleX}, ${scaleY})`;
       requestAnimationFrame(updateGrid);
     }
     updateGrid();
     bottomRect.addEventListener('mousemove', e=>{
       const r = bottomRect.getBoundingClientRect();
-      const cellW = r.width/4;
-      const cellH = r.height/4;
-      if(e.clientX - r.left < cellW) targetGX = Math.min(targetGX + 25, 0);
-      else if(r.right - e.clientX < cellW) targetGX = Math.max(targetGX - 25, -100);
-      if(e.clientY - r.top < cellH) targetGY = Math.min(targetGY + 25, 0);
-      else if(r.bottom - e.clientY < cellH) targetGY = Math.max(targetGY - 25, -100);
+      const cell = Math.min(r.width, r.height)/4;
+      if(e.clientX - r.left < cell) targetGX = Math.min(targetGX + 25, 0);
+      else if(r.right - e.clientX < cell) targetGX = Math.max(targetGX - 25, -100);
+      if(e.clientY - r.top < cell) targetGY = Math.min(targetGY + 25, 0);
+      else if(r.bottom - e.clientY < cell) targetGY = Math.max(targetGY - 25, -100);
     });
     bottomRect.addEventListener('mouseleave', ()=>{ targetGX = -50; targetGY = -50; });
 
@@ -381,8 +384,8 @@ const startTime=performance.now();
           const sy = sq / label.dataset.baseH;
           label.style.width = `${titleW}px`;
           label.style.height = `${sq}px`;
-          label.style.fontSize = `${label.dataset.baseSize}px`;
-          label.style.transform = `translate(-50%,-50%) scale(${sx},${sy})`;
+          label.style.fontSize = `${label.dataset.baseSize * sy}px`;
+          label.style.transform = `translate(-50%,-50%) scaleX(${(sx/sy).toFixed(4)}) translateZ(0.1px)`;
           label.classList.add('focused');
           label.style.left = `${x}px`;
           label.style.top = `${y}px`;
@@ -421,6 +424,7 @@ const startTime=performance.now();
         ud.clickStart = performance.now();
         ud.startPos.copy(f.position);
         ud.targetPos.copy(squareWorldPos());
+        f.rotation.x = 0;
         f.rotation.y = 0;
         f.rotation.z = 0;
         glass.classList.add('visible');
@@ -525,18 +529,9 @@ const startTime=performance.now();
             ud.targetPos.copy(target);
             const t = Math.min((now-ud.clickStart)/ud.duration,1);
             f.position.lerpVectors(ud.startPos, target, ease(t));
-            if(t < 1) {
-              f.rotation.x = THREE.MathUtils.degToRad(-2);
-              f.rotation.y = 0;
-              f.rotation.z = 0;
-            } else {
-              const proj = f.position.clone().project(camera);
-              const relX = mouse.x - proj.x;
-              const relY = mouse.y - proj.y;
-              f.rotation.x = THREE.MathUtils.degToRad(-2);
-              f.rotation.y = relX * 0.05;
-              f.rotation.z = -relY * 0.05;
-            }
+            f.rotation.x = 0;
+            f.rotation.y = 0;
+            f.rotation.z = 0;
             if(t>=1) f.position.copy(target);
             return;
           }

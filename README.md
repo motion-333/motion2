@@ -19,9 +19,10 @@ This repository provides utilities for working with the `static/pf` folder.
   specific folder. Layout information is stored in `layouts/<folder>.json` and
   loaded when the folder is selected in the interface.
 
-- `builder.html` offers a drag-and-drop layout builder. Select a folder,
-  drag files onto the grid and click **Save** to download the layout JSON which
-  you can place in the `layouts/` directory.
+- `builder.html` offers a drag-and-drop layout builder. It lists the folders
+  found in `static/pf` and, when one is chosen, shows its files. Drag any item
+  onto the square grid and click **Save** to download the layout JSON which you
+  can place in the `layouts/` directory.
 
 ## Usage
 
