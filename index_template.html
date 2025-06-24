@@ -37,11 +37,9 @@
       white-space:nowrap;
       transform:translate(-50%,0);
       text-rendering:geometricPrecision;
-      transition:transform 0.3s ease, font-size 0.3s ease, left 0.3s ease, top 0.3s ease;
-      will-change:transform, left, top;
+      transition:transform 0.3s ease, font-size 0.3s ease;
+      will-change:transform;
       -webkit-font-smoothing:antialiased;
-      backface-visibility:hidden;
-      transform-style:preserve-3d;
       contain:paint;
       pointer-events:none;
     }
@@ -49,7 +47,7 @@
       pointer-events:auto;
       display:flex;
       justify-content:center;
-      transition:transform 0.3s ease, left 0.3s ease, top 0.3s ease, font-size 0.3s ease;
+      transition:transform 0.3s ease, font-size 0.3s ease;
     }
     .folder-label span {
       display:inline-block;
@@ -90,6 +88,7 @@
       width:calc(100% - 20vh + 4px);
       box-sizing:border-box;
       border:2px solid #1449ff;
+      overflow:hidden;
     }
     #frame .bottom-rect {
       position:absolute;
@@ -426,7 +425,7 @@ const startTime=performance.now();
           label.style.width = `${titleW}px`;
           label.style.height = `${sq}px`;
           label.style.fontSize = `${label.dataset.baseSize * sy}px`;
-          label.style.transform = `translate(-50%,-50%) scaleX(${(sx/sy).toFixed(4)}) translateZ(0.1px)`;
+          label.style.transform = `translate(-50%,-50%) scaleX(${(sx/sy).toFixed(4)})`;
           label.classList.add('focused');
           label.style.left = `${x}px`;
           label.style.top = `${y}px`;
