@@ -11,10 +11,13 @@ This repository provides utilities for working with the `static/pf` folder.
   folders and thicken and widen when hovered. Clicking a folder focuses it,
   displaying a centered frame with the folder on the left and the title
   filling the adjoining rectangle. When focused, the folder locks into the
-  square portion of the frame and tilts around the Y and Z axes depending on
-  the pointer position while remaining relatively flat. Active titles scale
-  uniformly to fit the rectangle so text stays sharp, and individual letters
-  stretch or shrink in response to hovering.
+  square portion of the frame and tilts slightly with the pointer. The bottom
+  rectangle now holds a scrollable grid where you can showcase images or
+  videos.
+
+- `manage_layout.py` lets you assign images or videos to grid cells for a
+  specific folder. Layout information is stored in `layouts/<folder>.json` and
+  loaded when the folder is selected in the interface.
 
 ## Usage
 
@@ -25,3 +28,11 @@ python generate_index_html.py
 ```
 
 Open `index.html` in your browser to see the list.
+
+To populate the grid for a folder run:
+
+```bash
+python manage_layout.py <folder>
+```
+Follow the prompts to assign images or videos to grid cells. The page will load
+your layout when that folder is selected.

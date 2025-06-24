@@ -98,6 +98,26 @@
       height:calc(100% - 20vh + 4px);
       box-sizing:border-box;
       border:2px solid #1449ff;
+      overflow:hidden;
+    }
+    #frame .bottom-rect .grid {
+      position:absolute;
+      top:0;
+      left:0;
+      width:200%;
+      height:200%;
+      display:grid;
+      grid-template-columns:repeat(8,1fr);
+      grid-template-rows:repeat(8,1fr);
+      background-image:repeating-linear-gradient(#1449ff33 0 1px,transparent 1px 25%),
+                      repeating-linear-gradient(90deg,#1449ff33 0 1px,transparent 1px 25%);
+      background-size:calc(100%/8) calc(100%/8);
+      pointer-events:none;
+    }
+    #frame .bottom-rect .grid-item {
+      position:absolute;
+      background-size:cover;
+      background-position:center;
     }
   </style>
 </head>
@@ -105,7 +125,7 @@
   <div id="logo">['[]']'|':[][\]</div>
   <div class="glass" id="glass"></div>
   <canvas id="bgCanvas"></canvas>
-  <div id="frame"><div class="square"></div><div class="title-rect"></div><div class="bottom-rect"></div></div>
+  <div id="frame"><div class="square"></div><div class="title-rect"></div><div class="bottom-rect"><div class="grid"></div></div></div>
   <canvas id="fgCanvas"></canvas>
   <div id="labels"></div>
   <script src="https://unpkg.com/three@0.148.0/build/three.min.js"></script>
@@ -113,6 +133,8 @@
     // Renderer & scene setup
     const bgCanvas = document.getElementById('bgCanvas'), fgCanvas = document.getElementById('fgCanvas'), glass = document.getElementById('glass');
     const frame = document.getElementById('frame');
+    const bottomRect = frame.querySelector('.bottom-rect');
+    const gridEl = bottomRect.querySelector('.grid');
     const labelsDiv = document.getElementById('labels');
     const logoEl = document.getElementById('logo');
     const logoText = "['[]']'|':[][\\]";
@@ -140,6 +162,16 @@
 
     let folders = [];
     let magnetized = null;
+
+    bottomRect.addEventListener('mousemove', e=>{
+      const r = bottomRect.getBoundingClientRect();
+      const x = (e.clientX - r.left)/r.width - 0.5;
+      const y = (e.clientY - r.top)/r.height - 0.5;
+      gridEl.style.transform = `translate(${-x*50}%, ${-y*50}%)`;
+    });
+    bottomRect.addEventListener('mouseleave', ()=>{
+      gridEl.style.transform = 'translate(0,0)';
+    });
 
   document.addEventListener('mousemove', e => {
       folders.forEach(f=>{
@@ -312,6 +344,26 @@ const startTime=performance.now();
       return pos;
     }
 
+    function loadLayout(name){
+      fetch(`layouts/${name}.json`)
+        .then(r=>r.ok?r.json():[])
+        .then(items=>{
+          gridEl.innerHTML='';
+          items.forEach(it=>{
+            const div=document.createElement(it.path.endsWith('.mp4')?'video':'img');
+            if(div.tagName==='VIDEO'){div.src=`static/pf/${name}/${it.path}`;div.autoplay=true;div.loop=true;div.muted=true;}
+            else div.src=`static/pf/${name}/${it.path}`;
+            div.className='grid-item';
+            div.style.left=`${(it.x/8)*100}%`;
+            div.style.top=`${(it.y/8)*100}%`;
+            div.style.width=`${(it.w/8)*100}%`;
+            div.style.height=`${(it.h/8)*100}%`;
+            gridEl.appendChild(div);
+          });
+        })
+        .catch(()=>{gridEl.innerHTML='';});
+    }
+
     function updateLabels(){
       folders.forEach(f=>{
         const label = f.userData.label;
@@ -327,7 +379,7 @@ const startTime=performance.now();
           label.style.width = `${titleW}px`;
           label.style.height = `${sq}px`;
           label.style.fontSize = `${label.dataset.baseSize * scale}px`;
-          label.style.transform = `translate(-50%,-50%) scale(${scale})`;
+          label.style.transform = `translate(-50%,-50%)`;
           label.classList.add('focused');
           label.style.left = `${x}px`;
           label.style.top = `${y}px`;
@@ -340,7 +392,7 @@ const startTime=performance.now();
           const v = f.position.clone();
           v.project(camera);
           const x = (v.x * 0.5 + 0.5) * window.innerWidth;
-          const y = (-v.y * 0.5 + 0.5) * window.innerHeight + 12;
+          const y = (-v.y * 0.5 + 0.5) * window.innerHeight + 6;
           label.style.left = `${x}px`;
           label.style.top = `${y}px`;
           label.style.width = 'auto';
@@ -370,6 +422,7 @@ const startTime=performance.now();
         f.rotation.z = 0;
         glass.classList.add('visible');
         frame.classList.add('active');
+        loadLayout(ud.name);
         console.log('Selected folder:', ud.name);
       } else {
         ud.returning = true;
@@ -378,6 +431,7 @@ const startTime=performance.now();
         ud.returnTo.copy(ud.startPos);
         glass.classList.remove('visible');
         frame.classList.remove('active');
+        gridEl.innerHTML = '';
       }
     });
 
@@ -477,8 +531,8 @@ const startTime=performance.now();
               const relX = mouse.x - proj.x;
               const relY = mouse.y - proj.y;
               f.rotation.x = THREE.MathUtils.degToRad(-2);
-              f.rotation.y = relX * 0.15;
-              f.rotation.z = -relY * 0.15;
+              f.rotation.y = relX * 0.05;
+              f.rotation.z = -relY * 0.05;
             }
             if(t>=1) f.position.copy(target);
             return;
