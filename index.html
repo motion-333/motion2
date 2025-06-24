@@ -37,7 +37,7 @@
       white-space:nowrap;
       transform:translate(-50%,0);
       text-rendering:geometricPrecision;
-      transition:transform 0.3s ease, font-size 0.3s ease, opacity 0.5s ease;
+      transition:transform 0.3s ease, font-size 0.3s ease, opacity 0.2s ease;
       will-change:transform;
       -webkit-font-smoothing:antialiased;
       contain:paint;
@@ -48,7 +48,7 @@
       pointer-events:auto;
       display:flex;
       justify-content:center;
-      transition:transform 0.3s ease, font-size 0.3s ease, opacity 0.5s ease;
+      transition:transform 0.3s ease, font-size 0.3s ease, opacity 0.2s ease;
     }
     .folder-label span {
       display:inline-block;
@@ -278,6 +278,8 @@ const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
 
     function setupActiveLabel(label){
       const spans = Array.from(label.querySelectorAll('span'));
+      const baseWidths = label.baseWidths || spans.map(s=>s.offsetWidth);
+      const baseTotal = baseWidths.reduce((a,b)=>a+b,0);
       label.addEventListener('mousemove', e => {
         if(!label.classList.contains('focused')) return;
         const rect = label.getBoundingClientRect();
@@ -288,9 +290,10 @@ const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
           const influence = Math.max(0, 1 - dist/rect.width*2);
           return 1 + influence*1.2;
         });
-        const sum = factors.reduce((a,b)=>a+b,0);
+        const newTotal = factors.reduce((sum,f,i)=>sum+baseWidths[i]*f,0);
+        const ratio = baseTotal / newTotal;
         factors.forEach((f,i)=>{
-          const scale = f * spans.length / sum;
+          const scale = f * ratio;
           const weight = 400 + (scale-1)*400;
           spans[i].style.transform = `scaleX(${scale})`;
           spans[i].style.setProperty('--wght', weight.toFixed(0));
@@ -357,6 +360,7 @@ const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
       label.dataset.baseW = label.offsetWidth;
       label.dataset.baseH = label.offsetHeight;
       label.dataset.baseSize = parseFloat(getComputedStyle(label).fontSize);
+      label.baseWidths = Array.from(label.querySelectorAll('span')).map(s=>s.offsetWidth);
       f.userData.label = label;
       f.userData.letters = label.querySelectorAll('span');
       setupActiveLabel(label);
@@ -486,7 +490,7 @@ const startTime=performance.now();
         activeFolder = null;
         const label = ud.label;
         label.style.opacity = 0;
-        setTimeout(()=>{ label.style.opacity = 1; }, ud.returnDuration);
+        setTimeout(()=>{ label.style.opacity = 1; }, 2200);
       }
     });
 
