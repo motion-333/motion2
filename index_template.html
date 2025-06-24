@@ -276,8 +276,8 @@
 const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
 
     function setupActiveLabel(label){
-      const hoverScale = 1.8;   // hovered width multiplier
-      const neighborScale = 1.2;   // neighbor width multiplier
+      const hoverScale = 1.8;
+      const neighborScale = 1.2;
       const normalWght = 400;
       const neighborWght = 600;
       const hoverWght = 900;
@@ -297,52 +297,58 @@ const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
       }
 
       const inners = letters.map(o=>o.querySelector('.char'));
-      const n = letters.length;
-      const baseWidths = [];
+      label.baseWidths = [];
+      label.baseTotal = 0;
 
       requestAnimationFrame(() => {
-        let totalW = 0;
-        letters.forEach((out, i) => {
+        letters.forEach((out,i)=>{
           const inn = inners[i];
-          inn.style.transform = 'scaleX(1)';
+          inn.style.transform='scaleX(1)';
           const w = inn.getBoundingClientRect().width;
-          baseWidths[i] = w;
-          totalW += w;
+          label.baseWidths[i]=w;
+          label.baseTotal += w;
         });
-        label.style.width = totalW + 'px';
-        letters.forEach((out, i) => {
-          out.style.width = baseWidths[i] + 'px';
+        refreshLayout();
+      });
+
+      function refreshLayout(){
+        const containerW = label.getBoundingClientRect().width;
+        label.currentWidth = containerW;
+        label.scaleX = containerW / label.baseTotal;
+        letters.forEach((out,i)=>{
+          out.style.width = (label.baseWidths[i]*label.scaleX)+'px';
+          const ch = inners[i];
+          ch.style.transform = `scaleX(${label.scaleX})`;
+          ch.style.fontVariationSettings = `'wght' ${normalWght}`;
         });
+      }
 
-        letters.forEach((out, i) => {
-          const inn = inners[i];
-          out.addEventListener('mouseenter', () => {
-            if(!label.classList.contains('focused')) return;
-            const baseH = baseWidths[i];
-            const baseN = (i>0?baseWidths[i-1]:0) + (i<n-1?baseWidths[i+1]:0);
-            const baseO = totalW - baseH - baseN;
-            const otherScale = (totalW - baseH*hoverScale - baseN*neighborScale) / baseO;
+      label.refreshLayout = refreshLayout;
 
-            letters.forEach((o, j) => {
-              const ch = inners[j];
-              let scale, wght;
-              if(j===i){ scale=hoverScale; wght=hoverWght; }
-              else if(j===i-1 || j===i+1){ scale=neighborScale; wght=neighborWght; }
-              else{ scale=otherScale; wght=normalWght; }
-              o.style.width = (baseWidths[j]*scale)+'px';
-              ch.style.transform = `scaleX(${scale})`;
-              ch.style.fontVariationSettings = `'wght' ${wght}`;
-            });
+      letters.forEach((out,i)=>{
+        const inn = inners[i];
+        out.addEventListener('mouseenter',()=>{
+          if(!label.classList.contains('focused')) return;
+          refreshLayout();
+          const bw = label.baseWidths.map(w=>w*label.scaleX);
+          const baseH = bw[i];
+          const baseN = (i>0?bw[i-1]:0) + (i<bw.length-1?bw[i+1]:0);
+          const baseO = label.currentWidth - baseH - baseN;
+          const otherScale = (label.currentWidth - baseH*hoverScale - baseN*neighborScale)/baseO;
+          letters.forEach((o,j)=>{
+            const ch = inners[j];
+            let sc, wght;
+            if(j===i){ sc=hoverScale; wght=hoverWght; }
+            else if(j===i-1 || j===i+1){ sc=neighborScale; wght=neighborWght; }
+            else { sc=otherScale; wght=normalWght; }
+            o.style.width = (label.baseWidths[j]*label.scaleX*sc)+'px';
+            ch.style.transform = `scaleX(${label.scaleX*sc})`;
+            ch.style.fontVariationSettings = `'wght' ${wght}`;
           });
-          out.addEventListener('mouseleave', () => {
-            if(!label.classList.contains('focused')) return;
-            letters.forEach((o, j) => {
-              const ch = inners[j];
-              o.style.width = baseWidths[j]+'px';
-              ch.style.transform = 'scaleX(1)';
-              ch.style.fontVariationSettings = `'wght' ${normalWght}`;
-            });
-          });
+        });
+        out.addEventListener('mouseleave',()=>{
+          if(!label.classList.contains('focused')) return;
+          refreshLayout();
         });
       });
     }
@@ -486,6 +492,7 @@ const startTime=performance.now();
           label.style.alignItems = 'center';
           label.style.justifyContent = 'center';
           label.style.pointerEvents = 'auto';
+          if(label.refreshLayout) label.refreshLayout();
         } else {
           const v = f.position.clone();
           v.project(camera);
@@ -501,6 +508,7 @@ const startTime=performance.now();
           label.style.pointerEvents = 'none';
           label.style.overflow = 'visible';
           label.style.display = f.visible ? 'block' : 'none';
+          if(label.refreshLayout) label.refreshLayout();
         }
       });
     }
