@@ -35,7 +35,8 @@
       color:#1449ff;
       font-size:14px;
       white-space:nowrap;
-      transform:translate(-50%,0) translateZ(0);
+      transform:translate(-50%,0) translateZ(0.1px);
+      text-rendering:optimizeLegibility;
       transition:transform 0.2s ease;
       will-change:transform, left, top;
       -webkit-font-smoothing: antialiased;
@@ -152,15 +153,23 @@
       });
       const active = folders.find(f=>f.userData.focused);
       if(active){
-        active.userData.letters.forEach(l=>{
+        const letters = Array.from(active.userData.letters);
+        const closenesses = [];
+        let total=0;
+        letters.forEach(l=>{
           const r = l.getBoundingClientRect();
           const cx = r.left + r.width/2;
           const dist = Math.abs(e.clientX - cx);
-          const closeness = Math.max(0, 1 - dist/100);
-          const wd = 80 + closeness*120;
-          const wght = 400 + closeness*400;
-          l.style.setProperty('--wdth', wd.toFixed(0));
-          l.style.setProperty('--wght', wght.toFixed(0));
+          const c = Math.max(0, 1 - dist/100);
+          closenesses.push(c);
+          total += 1 + c*0.6;
+        });
+        const factor = letters.length / total;
+        letters.forEach((l,i)=>{
+          const c = closenesses[i];
+          const scale = (1 + c*0.6) * factor;
+          l.style.setProperty('--wdth', (scale*100).toFixed(0));
+          l.style.setProperty('--wght', (400 + c*400).toFixed(0));
         });
       }
   });
@@ -272,7 +281,7 @@
     const introDur=3000, scatterDur=2000;
 const startTime=performance.now();
 
-    const targetDepth = 9.5;
+    const targetDepth = 11;
     function squareWorldPos(){
       const frameRect = frame.getBoundingClientRect();
       const sq = window.innerHeight * 0.2;
@@ -437,7 +446,9 @@ const startTime=performance.now();
             f.position.lerpVectors(ud.startPos, target, ease(t));
             f.rotation.x = 0;
             f.rotation.z = 0;
-            f.rotation.y = targetMouse.x * 0.4;
+            const proj = f.position.clone().project(camera);
+            const relX = mouse.x - proj.x;
+            f.rotation.y = relX * 0.4;
             if(t>=1) f.position.copy(target);
             return;
           }
