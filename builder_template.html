@@ -6,14 +6,18 @@
   <title>Layout Builder</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet">
   <style>
-    body {margin:0;font-family:'Outfit',sans-serif;display:flex;height:100vh;}
-    #sidebar {width:200px;padding:10px;overflow-y:auto;border-right:2px solid #1449ff;box-sizing:border-box;}
-    #sidebar select {width:100%;margin-bottom:10px;}
+    body{margin:0;font-family:'Outfit',sans-serif;display:flex;height:100vh;}
+    #sidebar{width:220px;padding:10px;overflow-y:auto;border-right:2px solid #1449ff;box-sizing:border-box;}
+    #sidebar select{width:100%;margin-bottom:10px;}
     #fileList img,#fileList video{width:100%;margin-bottom:8px;cursor:grab;}
-    #grid {flex:1;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);position:relative;aspect-ratio:1;}
-    #grid .cell {border:2px solid #1449ff;position:relative;box-sizing:border-box;}
-    #grid .cell img,#grid .cell video{width:100%;height:100%;object-fit:cover;}
-    #saveBtn {margin-top:10px;width:100%;}
+    #grid{flex:1;position:relative;aspect-ratio:1;
+      background-image:repeating-linear-gradient(#1449ff 0 2px,transparent 2px calc(100%/8)),
+                      repeating-linear-gradient(90deg,#1449ff 0 2px,transparent 2px calc(100%/8));
+      background-size:calc(100%/8) calc(100%/8);
+    }
+    #grid .item{position:absolute;border:2px solid #1449ff;box-sizing:border-box;cursor:move;}
+    #grid .item img,#grid .item video{width:100%;height:100%;object-fit:cover;pointer-events:none;}
+    #saveBtn{margin-top:10px;width:100%;}
   </style>
 </head>
 <body>
@@ -24,23 +28,86 @@
   </div>
   <div id="grid"></div>
 <script>
+const CELL=8;
 const folders = FOLDER_NAMES_PLACEHOLDER;
 const folderFiles = FOLDER_FILES_PLACEHOLDER;
-const select = document.getElementById('folderSelect');
-const fileList = document.getElementById('fileList');
-const grid = document.getElementById('grid');
-let currentFolder = null;
+const select=document.getElementById('folderSelect');
+const fileList=document.getElementById('fileList');
+const grid=document.getElementById('grid');
+let currentFolder=null;
 
-folders.forEach(f=>{const opt=document.createElement('option');opt.value=f;opt.textContent=f;select.appendChild(opt);});
+folders.forEach(f=>{const o=document.createElement('option');o.value=f;o.textContent=f;select.appendChild(o);});
 
-for(let y=0;y<8;y++){
-  for(let x=0;x<8;x++){
-    const cell=document.createElement('div');
-    cell.className='cell';
-    cell.dataset.x=x;cell.dataset.y=y;
-    cell.addEventListener('dragover',e=>e.preventDefault());
-    cell.addEventListener('drop',e=>{e.preventDefault();const file=e.dataTransfer.getData('text');if(!file)return;cell.innerHTML='';const ext=file.split('.').pop();const el=document.createElement(ext==='mp4'?'video':'img');el.src=`static/pf/${currentFolder}/${file}`;if(el.tagName==='VIDEO'){el.autoplay=true;el.loop=true;el.muted=true;}cell.appendChild(el);cell.dataset.file=file;});
-    grid.appendChild(cell);
+function gcd(a,b){return b?gcd(b,a%b):a;}
+
+function setPos(item){
+  item.style.left=`${(item.dataset.x/CELL)*100}%`;
+  item.style.top=`${(item.dataset.y/CELL)*100}%`;
+  item.style.width=`${(item.dataset.w/CELL)*100}%`;
+  item.style.height=`${(item.dataset.h/CELL)*100}%`;
+}
+
+function makeDraggable(item){
+  let sx,sy,ox,oy;
+  item.addEventListener('mousedown',e=>{
+    sx=e.clientX; sy=e.clientY;
+    ox=parseFloat(item.dataset.x); oy=parseFloat(item.dataset.y);
+    function move(ev){
+      const r=grid.getBoundingClientRect();
+      let nx=ox+(ev.clientX-sx)/r.width*CELL;
+      let ny=oy+(ev.clientY-sy)/r.height*CELL;
+      nx=Math.round(Math.max(0,Math.min(CELL-parseInt(item.dataset.w),nx)));
+      ny=Math.round(Math.max(0,Math.min(CELL-parseInt(item.dataset.h),ny)));
+      item.dataset.x=nx; item.dataset.y=ny;
+      setPos(item);
+    }
+    function up(){document.removeEventListener('mousemove',move);document.removeEventListener('mouseup',up);}
+    document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+  });
+}
+
+function createItem(file,w,h,x,y){
+  const ext=file.split('.').pop();
+  const el=document.createElement(ext==='mp4'?'video':'img');
+  el.src=`static/pf/${currentFolder}/${file}`;
+  if(el.tagName==='VIDEO'){el.autoplay=true;el.loop=true;el.muted=true;}
+  const item=document.createElement('div');
+  item.className='item';
+  item.dataset.file=file;
+  item.dataset.w=w; item.dataset.h=h; item.dataset.x=x; item.dataset.y=y;
+  item.appendChild(el);
+  grid.appendChild(item);
+  setPos(item);
+  makeDraggable(item);
+  return item;
+}
+
+function dropFile(file,px,py){
+  const r=grid.getBoundingClientRect();
+  let x=Math.floor(px/r.width*CELL);
+  let y=Math.floor(py/r.height*CELL);
+  const ext=file.split('.').pop();
+  const el=document.createElement(ext==='mp4'?'video':'img');
+  el.src=`static/pf/${currentFolder}/${file}`;
+  if(el.tagName==='VIDEO'){el.autoplay=true;el.loop=true;el.muted=true;}
+  const item=document.createElement('div');
+  item.className='item';
+  item.dataset.file=file;
+  item.dataset.w=1; item.dataset.h=1; item.dataset.x=x; item.dataset.y=y;
+  item.appendChild(el);
+  grid.appendChild(item);
+  makeDraggable(item);
+  function finish(w,h){
+    item.dataset.w=w; item.dataset.h=h;
+    if(x+w> CELL) x=CELL-w;
+    if(y+h> CELL) y=CELL-h;
+    item.dataset.x=x; item.dataset.y=y;
+    setPos(item);
+  }
+  if(el.tagName==='IMG'){
+    el.onload=()=>{let g=gcd(el.naturalWidth,el.naturalHeight);let w=Math.round(el.naturalWidth/g);let h=Math.round(el.naturalHeight/g);if(w> CELL){h=Math.round(h*CELL/w);w=CELL;}if(h> CELL){w=Math.round(w*CELL/h);h=CELL;}finish(w,h);};
+  }else{
+    el.onloadedmetadata=()=>{let g=gcd(el.videoWidth,el.videoHeight);let w=Math.round(el.videoWidth/g);let h=Math.round(el.videoHeight/g);if(w> CELL){h=Math.round(h*CELL/w);w=CELL;}if(h> CELL){w=Math.round(w*CELL/h);h=CELL;}finish(w,h);};
   }
 }
 
@@ -56,27 +123,22 @@ function loadFiles(folder){
     el.addEventListener('dragstart',ev=>ev.dataTransfer.setData('text',file));
     fileList.appendChild(el);
   });
-  // clear grid visuals
-  grid.querySelectorAll('.cell').forEach(c=>{c.innerHTML='';c.dataset.file='';});
+  grid.innerHTML='';
   fetch(`layouts/${folder}.json`).then(r=>r.ok?r.json():[]).then(data=>{
-    data.forEach(it=>{
-      const cell=grid.querySelector(`.cell[data-x='${it.x}'][data-y='${it.y}']`);
-      if(cell){
-        const ext=it.path.split('.').pop();
-        const el=document.createElement(ext==='mp4'?'video':'img');
-        el.src=`static/pf/${folder}/${it.path}`;
-        if(el.tagName==='VIDEO'){el.autoplay=true;el.loop=true;el.muted=true;}
-        cell.appendChild(el);cell.dataset.file=it.path;
-      }
-    });
+    data.forEach(it=>{createItem(it.path,it.w,it.h,it.x,it.y);});
   });
 }
 select.addEventListener('change',()=>loadFiles(select.value));
 if(folders.length){select.value=folders[0];loadFiles(folders[0]);}
 
+grid.addEventListener('dragover',e=>e.preventDefault());
+grid.addEventListener('drop',e=>{e.preventDefault();const file=e.dataTransfer.getData('text');if(file)dropFile(file,e.offsetX,e.offsetY);});
+
 document.getElementById('saveBtn').addEventListener('click',()=>{
   const items=[];
-  grid.querySelectorAll('.cell').forEach(c=>{if(c.dataset.file){items.push({path:c.dataset.file,x:parseInt(c.dataset.x),y:parseInt(c.dataset.y),w:1,h:1});}});
+  grid.querySelectorAll('.item').forEach(it=>{
+    items.push({path:it.dataset.file,x:parseInt(it.dataset.x),y:parseInt(it.dataset.y),w:parseInt(it.dataset.w),h:parseInt(it.dataset.h)});
+  });
   const blob=new Blob([JSON.stringify(items,null,2)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${currentFolder}.json`;a.click();URL.revokeObjectURL(a.href);
 });

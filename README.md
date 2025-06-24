@@ -21,8 +21,10 @@ This repository provides utilities for working with the `static/pf` folder.
 
 - `builder.html` offers a drag-and-drop layout builder. It lists the folders
   found in `static/pf` and, when one is chosen, shows its files. Drag any item
-  onto the square grid and click **Save** to download the layout JSON which you
-  can place in the `layouts/` directory.
+  onto the grid and it will scale to a number of squares based on its aspect
+  ratio (e.g. a 4:5 photo spans 4×5 cells). Items remain draggable after
+  placement and may overlap. Click **Save** to download the resulting layout
+  JSON for the `layouts/` directory.
 
 ## Usage
 

@@ -109,7 +109,6 @@
       display:grid;
       grid-template-columns:repeat(32,1fr);
       grid-template-rows:repeat(32,1fr);
-      transform:translate(-50%,-50%);
       background-image:repeating-linear-gradient(#1449ff 0 2px,transparent 2px calc(100%/32)),
                       repeating-linear-gradient(90deg,#1449ff 0 2px,transparent 2px calc(100%/32));
       background-size:calc(100%/32) calc(100%/32);
@@ -282,9 +281,11 @@ const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
           if(span===hovered){
             span.style.transform = `scaleX(${scaleHover})`;
             span.style.setProperty('--wght','800');
+            span.style.setProperty('--wdth',200);
           } else {
             span.style.transform = `scaleX(${scaleOthers})`;
             span.style.setProperty('--wght','400');
+            span.style.setProperty('--wdth',100*scaleOthers);
           }
         });
       });
@@ -292,6 +293,7 @@ const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
         spans.forEach(span=>{
           span.style.transform = 'scaleX(1)';
           span.style.setProperty('--wght','400');
+          span.style.setProperty('--wdth',100);
         });
       });
     }
