@@ -382,7 +382,7 @@ const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
       label.baseWidths = Array.from(label.querySelectorAll('span')).map(s=>s.offsetWidth);
       label.baseTotal = label.baseWidths.reduce((a,b)=>a+b,0);
       f.userData.label = label;
-      f.userData.letters = label.querySelectorAll('span');
+      f.userData.letters = Array.from(label.querySelectorAll('span'));
       setupActiveLabel(label);
       scene.add(f);
       folders.push(f);
