@@ -81,22 +81,31 @@
       box-sizing:border-box;
       border:2px solid #1449ff;
     }
-      #frame .title-rect {
-        position:absolute;
-        top:-2px;
-        left:calc(20vh - 2px);
-        height:calc(20vh + 2px);
-        width:calc(100% - 20vh + 4px);
-        box-sizing:border-box;
-        border:2px solid #1449ff;
-      }
+    #frame .title-rect {
+      position:absolute;
+      top:-2px;
+      left:calc(20vh - 2px);
+      height:calc(20vh + 2px);
+      width:calc(100% - 20vh + 4px);
+      box-sizing:border-box;
+      border:2px solid #1449ff;
+    }
+    #frame .bottom-rect {
+      position:absolute;
+      top:calc(20vh - 2px);
+      left:-2px;
+      width:calc(100% + 4px);
+      height:calc(100% - 20vh + 2px);
+      box-sizing:border-box;
+      border:2px solid #1449ff;
+    }
   </style>
 </head>
 <body>
   <div id="logo">['[]']'|':[][\]</div>
   <div class="glass" id="glass"></div>
   <canvas id="bgCanvas"></canvas>
-  <div id="frame"><div class="square"></div><div class="title-rect"></div></div>
+  <div id="frame"><div class="square"></div><div class="title-rect"></div><div class="bottom-rect"></div></div>
   <canvas id="fgCanvas"></canvas>
   <div id="labels"></div>
   <script src="https://unpkg.com/three@0.148.0/build/three.min.js"></script>
@@ -274,6 +283,9 @@
       label.className = 'folder-label';
       label.innerHTML = [...name].map(ch=>`<span>${ch}</span>`).join('');
       labelsDiv.appendChild(label);
+      label.dataset.baseW = label.offsetWidth;
+      label.dataset.baseH = label.offsetHeight;
+      label.dataset.baseSize = parseFloat(getComputedStyle(label).fontSize);
       f.userData.label = label;
       f.userData.letters = label.querySelectorAll('span');
       scene.add(f);
@@ -309,11 +321,6 @@ const startTime=performance.now();
           const titleW = frameRect.width - sq;
           const x = frameRect.left + sq + titleW/2;
           const y = frameRect.top + sq/2;
-          if(!label.dataset.baseW){
-            label.dataset.baseW = label.offsetWidth;
-            label.dataset.baseH = label.offsetHeight;
-            label.dataset.baseSize = parseFloat(getComputedStyle(label).fontSize);
-          }
           const sx = titleW / label.dataset.baseW;
           const sy = sq / label.dataset.baseH;
           const scale = Math.min(sx, sy);
@@ -451,11 +458,12 @@ const startTime=performance.now();
             ud.targetPos.copy(target);
             const t = Math.min((now-ud.clickStart)/ud.duration,1);
             f.position.lerpVectors(ud.startPos, target, ease(t));
-            const relX = targetMouse.x;
-            const relY = targetMouse.y;
+            const proj = f.position.clone().project(camera);
+            const relX = mouse.x - proj.x;
+            const relY = mouse.y - proj.y;
             f.rotation.x = THREE.MathUtils.degToRad(-2);
-            f.rotation.y = relX * 0.3;
-            f.rotation.z = -relY * 0.3;
+            f.rotation.y = relX * 0.15;
+            f.rotation.z = -relY * 0.15;
             if(t>=1) f.position.copy(target);
             return;
           }
