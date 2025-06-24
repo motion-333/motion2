@@ -320,6 +320,14 @@ const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
 
       function refreshLayout(){
         const containerW = label.getBoundingClientRect().width;
+        label.baseTotal = 0;
+        letters.forEach((out,i)=>{
+          const inn = inners[i];
+          inn.style.transform = 'scaleX(1)';
+          const w = inn.getBoundingClientRect().width;
+          label.baseWidths[i] = w;
+          label.baseTotal += w;
+        });
         label.currentWidth = containerW;
         label.scaleX = containerW / label.baseTotal;
         letters.forEach((out,i)=>{
