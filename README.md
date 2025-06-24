@@ -7,7 +7,8 @@ This repository provides utilities for working with the `static/pf` folder.
 - `generate_index_html.py` reads those directories and creates `index.html`
   listing them. The page renders each folder as a 3D icon with
   its name displayed just below in the "Outfit" font. Labels drift with their
-  folders and thicken and widen when hovered. Clicking a folder focuses it,
+  folders and thicken and widen when hovered. When one letter grows, the others
+  shrink so the word keeps a constant width. Clicking a folder focuses it,
   displaying a centered frame with the folder on the left and the title
   filling the adjoining rectangle. When focused, the folder locks into the
   square portion of the frame and tilts slightly with the pointer. The bottom
@@ -23,7 +24,8 @@ This repository provides utilities for working with the `static/pf` folder.
 - `builder.html` offers a drag-and-drop layout builder. It lists the folders
   found in `static/pf` and, when one is chosen, shows its files. Drag any item
   onto the 32×32 grid and it snaps to these small cells while keeping the item's
-  aspect ratio. Items stay draggable and may overlap. The layout is stored in
+  aspect ratio. The grid is visibly drawn with blue lines so alignment is easy.
+  Items remain draggable and may overlap. The layout is stored in
   `localStorage` under `layout_<folder>` so `index.html` updates live when it
   changes.
 
