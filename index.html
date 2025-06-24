@@ -36,11 +36,13 @@
       font-size:14px;
       white-space:nowrap;
       transform:translate(-50%,0) translateZ(0.1px);
-      text-rendering:optimizeLegibility;
+      text-rendering:geometricPrecision;
       transition:transform 0.2s ease;
       will-change:transform, left, top;
-      -webkit-font-smoothing: antialiased;
+      -webkit-font-smoothing:antialiased;
       backface-visibility:hidden;
+      transform-style:preserve-3d;
+      contain:paint;
       pointer-events:none;
     }
     .folder-label.focused{
@@ -154,21 +156,22 @@
       const active = folders.find(f=>f.userData.focused);
       if(active){
         const letters = Array.from(active.userData.letters);
-        const closenesses = [];
-        let total=0;
+        const scales = [];
+        let total = 0;
         letters.forEach(l=>{
           const r = l.getBoundingClientRect();
           const cx = r.left + r.width/2;
           const dist = Math.abs(e.clientX - cx);
           const c = Math.max(0, 1 - dist/100);
-          closenesses.push(c);
-          total += 1 + c*0.6;
+          const w = 1 + c*0.6;
+          scales.push(w);
+          total += w;
         });
         const factor = letters.length / total;
         letters.forEach((l,i)=>{
-          const c = closenesses[i];
-          const scale = (1 + c*0.6) * factor;
-          l.style.setProperty('--wdth', (scale*100).toFixed(0));
+          const c = (scales[i]-1)/0.6;
+          const scale = scales[i] * factor;
+          l.style.transform = `scaleX(${scale})`;
           l.style.setProperty('--wght', (400 + c*400).toFixed(0));
         });
       }
@@ -281,7 +284,7 @@
     const introDur=3000, scatterDur=2000;
 const startTime=performance.now();
 
-    const targetDepth = 11;
+    const targetDepth = 14;
     function squareWorldPos(){
       const frameRect = frame.getBoundingClientRect();
       const sq = window.innerHeight * 0.2;

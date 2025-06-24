@@ -11,8 +11,9 @@ This repository provides utilities for working with the `static/pf` folder.
   folders and thicken and widen when hovered. Clicking a folder focuses it,
   displaying a centered frame with the folder on the left and the title
   stretched to fill an adjoining rectangle. When focused, the folder locks
-  into the square portion of the frame and tilts slightly with cursor movement
-  while the title letters expand or contract based on the pointer position.
+  into the square portion of the frame and tilts relative to the pointer
+  position. Active titles now keep a constant overall width while individual
+  letters stretch or shrink in response to hovering.
 
 ## Usage
 
