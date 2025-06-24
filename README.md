@@ -19,6 +19,10 @@ This repository provides utilities for working with the `static/pf` folder.
   specific folder. Layout information is stored in `layouts/<folder>.json` and
   loaded when the folder is selected in the interface.
 
+- `builder.html` offers a drag-and-drop layout builder. Select a folder,
+  drag files onto the grid and click **Save** to download the layout JSON which
+  you can place in the `layouts/` directory.
+
 ## Usage
 
 Add or remove folders inside `static/pf/` manually and run:
@@ -36,3 +40,5 @@ python manage_layout.py <folder>
 ```
 Follow the prompts to assign images or videos to grid cells. The page will load
 your layout when that folder is selected.
+
+Alternatively open `builder.html` in your browser to arrange items visually.

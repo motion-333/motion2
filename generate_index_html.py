@@ -3,16 +3,35 @@ import json
 from link_model_folders import associate_models
 
 TEMPLATE_FILE = Path('index_template.html')
+BUILDER_TEMPLATE_FILE = Path('builder_template.html')
 INDEX_FILE = Path('index.html')
+BUILDER_FILE = Path('builder.html')
 
 
 def generate_index():
     mapping = associate_models()
     folders = sorted(mapping.keys())
+    folder_files = {}
+    for name in folders:
+        pf_dir = Path('static/pf') / name
+        files = []
+        if pf_dir.exists():
+            for p in pf_dir.iterdir():
+                if p.is_file() and not p.name.startswith('.'):
+                    files.append(p.name)
+        folder_files[name] = files
+
     template = TEMPLATE_FILE.read_text()
     html = template.replace('FOLDER_NAMES_PLACEHOLDER', json.dumps(folders))
+    html = html.replace('FOLDER_FILES_PLACEHOLDER', json.dumps(folder_files))
     INDEX_FILE.write_text(html)
-    print(f"Wrote {INDEX_FILE} with {len(folders)} folders.")
+
+    builder_tmpl = BUILDER_TEMPLATE_FILE.read_text()
+    builder_html = builder_tmpl.replace('FOLDER_NAMES_PLACEHOLDER', json.dumps(folders))
+    builder_html = builder_html.replace('FOLDER_FILES_PLACEHOLDER', json.dumps(folder_files))
+    BUILDER_FILE.write_text(builder_html)
+
+    print(f"Wrote {INDEX_FILE} and {BUILDER_FILE} with {len(folders)} folders.")
 
 
 if __name__ == '__main__':

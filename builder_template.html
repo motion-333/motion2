@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Layout Builder</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet">
+  <style>
+    body {margin:0;font-family:'Outfit',sans-serif;display:flex;height:100vh;}
+    #sidebar {width:200px;padding:10px;overflow-y:auto;border-right:2px solid #1449ff;box-sizing:border-box;}
+    #sidebar select {width:100%;margin-bottom:10px;}
+    #fileList img,#fileList video{width:100%;margin-bottom:8px;cursor:grab;}
+    #grid {flex:1;display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);position:relative;}
+    #grid .cell {border:1px solid #1449ff55;position:relative;}
+    #grid .cell img,#grid .cell video{width:100%;height:100%;object-fit:cover;}
+    #saveBtn {margin-top:10px;width:100%;}
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <select id="folderSelect"></select>
+    <button id="saveBtn">Save Layout</button>
+    <div id="fileList"></div>
+  </div>
+  <div id="grid"></div>
+<script>
+const folders = FOLDER_NAMES_PLACEHOLDER;
+const folderFiles = FOLDER_FILES_PLACEHOLDER;
+const select = document.getElementById('folderSelect');
+const fileList = document.getElementById('fileList');
+const grid = document.getElementById('grid');
+let currentFolder = null;
+
+folders.forEach(f=>{const opt=document.createElement('option');opt.value=f;opt.textContent=f;select.appendChild(opt);});
+
+for(let y=0;y<8;y++){
+  for(let x=0;x<8;x++){
+    const cell=document.createElement('div');
+    cell.className='cell';
+    cell.dataset.x=x;cell.dataset.y=y;
+    cell.addEventListener('dragover',e=>e.preventDefault());
+    cell.addEventListener('drop',e=>{e.preventDefault();const file=e.dataTransfer.getData('text');if(!file)return;cell.innerHTML='';const ext=file.split('.').pop();const el=document.createElement(ext==='mp4'?'video':'img');el.src=`static/pf/${currentFolder}/${file}`;if(el.tagName==='VIDEO'){el.autoplay=true;el.loop=true;el.muted=true;}cell.appendChild(el);cell.dataset.file=file;});
+    grid.appendChild(cell);
+  }
+}
+
+function loadFiles(folder){
+  currentFolder=folder;
+  fileList.innerHTML='';
+  (folderFiles[folder]||[]).forEach(file=>{
+    const ext=file.split('.').pop();
+    const el=document.createElement(ext==='mp4'?'video':'img');
+    el.src=`static/pf/${folder}/${file}`;
+    if(el.tagName==='VIDEO'){el.autoplay=true;el.loop=true;el.muted=true;}
+    el.draggable=true;
+    el.addEventListener('dragstart',ev=>ev.dataTransfer.setData('text',file));
+    fileList.appendChild(el);
+  });
+  // clear grid visuals
+  grid.querySelectorAll('.cell').forEach(c=>{c.innerHTML='';c.dataset.file='';});
+  fetch(`layouts/${folder}.json`).then(r=>r.ok?r.json():[]).then(data=>{
+    data.forEach(it=>{
+      const cell=grid.querySelector(`.cell[data-x='${it.x}'][data-y='${it.y}']`);
+      if(cell){
+        const ext=it.path.split('.').pop();
+        const el=document.createElement(ext==='mp4'?'video':'img');
+        el.src=`static/pf/${folder}/${it.path}`;
+        if(el.tagName==='VIDEO'){el.autoplay=true;el.loop=true;el.muted=true;}
+        cell.appendChild(el);cell.dataset.file=it.path;
+      }
+    });
+  });
+}
+select.addEventListener('change',()=>loadFiles(select.value));
+if(folders.length){select.value=folders[0];loadFiles(folders[0]);}
+
+document.getElementById('saveBtn').addEventListener('click',()=>{
+  const items=[];
+  grid.querySelectorAll('.cell').forEach(c=>{if(c.dataset.file){items.push({path:c.dataset.file,x:parseInt(c.dataset.x),y:parseInt(c.dataset.y),w:1,h:1});}});
+  const blob=new Blob([JSON.stringify(items,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`${currentFolder}.json`;a.click();URL.revokeObjectURL(a.href);
+});
+</script>
+</body>
+</html>
