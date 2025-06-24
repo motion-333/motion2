@@ -58,14 +58,6 @@
       font-variation-settings:'wght' var(--wght),'wdth' var(--wdth);
       transition:font-variation-settings 0.3s ease, transform 0.3s ease;
     }
-    .folder-label.focused span:hover {
-      --wght:800;
-      transform:scaleX(1.8);
-    }
-    .folder-label.focused:hover span:not(:hover) {
-      transform:scaleX(1);
-      --wght:400;
-    }
     #frame {
       position:fixed;
       top:50%;
@@ -115,12 +107,12 @@
       width:400%;
       height:400%;
       display:grid;
-      grid-template-columns:repeat(8,1fr);
-      grid-template-rows:repeat(8,1fr);
+      grid-template-columns:repeat(32,1fr);
+      grid-template-rows:repeat(32,1fr);
       transform:translate(-50%,-50%);
-      background-image:repeating-linear-gradient(#1449ff 0 2px,transparent 2px 25%),
-                      repeating-linear-gradient(90deg,#1449ff 0 2px,transparent 2px 25%);
-      background-size:calc(100%/8) calc(100%/8);
+      background-image:repeating-linear-gradient(#1449ff 0 2px,transparent 2px calc(100%/32)),
+                      repeating-linear-gradient(90deg,#1449ff 0 2px,transparent 2px calc(100%/32));
+      background-size:calc(100%/32) calc(100%/32);
       pointer-events:none;
     }
     #frame .bottom-rect .grid-item {
@@ -270,7 +262,39 @@
       cursor3D.copy(raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(d)));
     });
 
-    const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
+const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
+
+    function setupActiveLabel(label){
+      const spans = Array.from(label.querySelectorAll('span'));
+      label.addEventListener('mousemove', e => {
+        if(!label.classList.contains('focused')) return;
+        let hovered = null;
+        spans.forEach(s=>{
+          const r = s.getBoundingClientRect();
+          if(e.clientX>=r.left && e.clientX<=r.right && e.clientY>=r.top && e.clientY<=r.bottom){
+            hovered = s;
+          }
+        });
+        const n = spans.length;
+        const scaleHover = 1.8;
+        const scaleOthers = hovered ? (n - scaleHover)/(n-1) : 1;
+        spans.forEach(span=>{
+          if(span===hovered){
+            span.style.transform = `scaleX(${scaleHover})`;
+            span.style.setProperty('--wght','800');
+          } else {
+            span.style.transform = `scaleX(${scaleOthers})`;
+            span.style.setProperty('--wght','400');
+          }
+        });
+      });
+      label.addEventListener('mouseleave', () => {
+        spans.forEach(span=>{
+          span.style.transform = 'scaleX(1)';
+          span.style.setProperty('--wght','400');
+        });
+      });
+    }
 
     // Folder factory
     function createFolder() {
@@ -327,6 +351,7 @@
       label.dataset.baseSize = parseFloat(getComputedStyle(label).fontSize);
       f.userData.label = label;
       f.userData.letters = label.querySelectorAll('span');
+      setupActiveLabel(label);
       scene.add(f);
       folders.push(f);
     }
