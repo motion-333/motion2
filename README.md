@@ -10,13 +10,11 @@ This repository provides utilities for working with the `static/pf` folder.
   its name displayed just below in the "Outfit" font. Labels drift with their
   folders and thicken and widen when hovered. Clicking a folder focuses it,
   displaying a centered frame with the folder on the left and the title
-  stretched to fill an adjoining rectangle. When focused, the folder locks
-  into the square portion of the frame and tilts relative to the pointer
-  position. Active titles now keep a constant overall width while individual
-  letters stretch or shrink in response to hovering. When a folder is
-  focused, it tilts around the X axis based on the cursor position relative to
-  the window center and the title is resized using the `font-size` property to
-  avoid pixelation.
+  filling the adjoining rectangle. When focused, the folder locks into the
+  square portion of the frame and tilts around the Y and Z axes depending on
+  the pointer position while remaining relatively flat. Active titles scale
+  uniformly to fit the rectangle so text stays sharp, and individual letters
+  stretch or shrink in response to hovering.
 
 ## Usage
 

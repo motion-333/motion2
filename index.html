@@ -316,8 +316,9 @@ const startTime=performance.now();
           }
           const sx = titleW / label.dataset.baseW;
           const sy = sq / label.dataset.baseH;
-          label.style.fontSize = `${label.dataset.baseSize * sy}px`;
-          label.style.transform = `translate(-50%,-50%) scaleX(${sx})`;
+          const scale = Math.min(sx, sy);
+          label.style.fontSize = `${label.dataset.baseSize * scale}px`;
+          label.style.transform = `translate(-50%,-50%) scale(${scale})`;
           label.classList.add('focused');
           label.style.left = `${x}px`;
           label.style.top = `${y}px`;
@@ -450,10 +451,11 @@ const startTime=performance.now();
             ud.targetPos.copy(target);
             const t = Math.min((now-ud.clickStart)/ud.duration,1);
             f.position.lerpVectors(ud.startPos, target, ease(t));
+            const relX = targetMouse.x;
             const relY = targetMouse.y;
-            f.rotation.x = THREE.MathUtils.degToRad(-5) + relY * 0.4;
-            f.rotation.y = 0;
-            f.rotation.z = 0;
+            f.rotation.x = THREE.MathUtils.degToRad(-2);
+            f.rotation.y = relX * 0.3;
+            f.rotation.z = -relY * 0.3;
             if(t>=1) f.position.copy(target);
             return;
           }
