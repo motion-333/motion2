@@ -13,7 +13,10 @@ This repository provides utilities for working with the `static/pf` folder.
   stretched to fill an adjoining rectangle. When focused, the folder locks
   into the square portion of the frame and tilts relative to the pointer
   position. Active titles now keep a constant overall width while individual
-  letters stretch or shrink in response to hovering.
+  letters stretch or shrink in response to hovering. When a folder is
+  focused, it tilts around the X axis based on the cursor position relative to
+  the window center and the title is resized using the `font-size` property to
+  avoid pixelation.
 
 ## Usage
 

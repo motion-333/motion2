@@ -37,7 +37,7 @@
       white-space:nowrap;
       transform:translate(-50%,0);
       text-rendering:geometricPrecision;
-      transition:transform 0.2s ease;
+      transition:transform 0.2s ease, font-size 0.2s ease;
       will-change:transform, left, top;
       -webkit-font-smoothing:antialiased;
       backface-visibility:hidden;
@@ -86,7 +86,7 @@
         top:-2px;
         left:calc(20vh - 2px);
         height:calc(20vh + 2px);
-        width:calc(100% - 20vh + 2px);
+        width:calc(100% - 20vh + 4px);
         box-sizing:border-box;
         border:2px solid #1449ff;
       }
@@ -312,10 +312,12 @@ const startTime=performance.now();
           if(!label.dataset.baseW){
             label.dataset.baseW = label.offsetWidth;
             label.dataset.baseH = label.offsetHeight;
+            label.dataset.baseSize = parseFloat(getComputedStyle(label).fontSize);
           }
           const sx = titleW / label.dataset.baseW;
           const sy = sq / label.dataset.baseH;
-          label.style.transform = `translate(-50%,-50%) scale(${sx},${sy})`;
+          label.style.fontSize = `${label.dataset.baseSize * sy}px`;
+          label.style.transform = `translate(-50%,-50%) scaleX(${sx})`;
           label.classList.add('focused');
           label.style.left = `${x}px`;
           label.style.top = `${y}px`;
@@ -329,6 +331,7 @@ const startTime=performance.now();
           label.style.left = `${x}px`;
           label.style.top = `${y}px`;
           label.style.transform = 'translate(-50%,0) scale(1)';
+          label.style.fontSize = `${label.dataset.baseSize}px`;
           label.classList.remove('focused');
           label.style.pointerEvents = 'none';
           label.style.display = f.visible ? 'block' : 'none';
@@ -447,11 +450,10 @@ const startTime=performance.now();
             ud.targetPos.copy(target);
             const t = Math.min((now-ud.clickStart)/ud.duration,1);
             f.position.lerpVectors(ud.startPos, target, ease(t));
-            const proj = f.position.clone().project(camera);
-            const relX = mouse.x - proj.x;
-            f.rotation.x = THREE.MathUtils.degToRad(-15);
+            const relY = targetMouse.y;
+            f.rotation.x = THREE.MathUtils.degToRad(-5) + relY * 0.4;
             f.rotation.y = 0;
-            f.rotation.z = THREE.MathUtils.degToRad(-5) + relX * 0.4;
+            f.rotation.z = 0;
             if(t>=1) f.position.copy(target);
             return;
           }
