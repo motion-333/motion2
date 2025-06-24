@@ -2,11 +2,10 @@
 
 This repository provides utilities for working with the `static/pf` folder.
 
-- `link_model_folders.py` creates directories listed in `models.json` under
-  `static/pf`.
-- `generate_index_html.py` ensures those directories exist (by calling
-  `link_model_folders.associate_models`) and creates `index.html`
-  listing all existing folders. The page renders each folder as a 3D icon with
+- `link_model_folders.py` provides `associate_models()` which simply lists all
+  directories inside `static/pf`.
+- `generate_index_html.py` reads those directories and creates `index.html`
+  listing them. The page renders each folder as a 3D icon with
   its name displayed just below in the "Outfit" font. Labels drift with their
   folders and thicken and widen when hovered. Clicking a folder focuses it,
   displaying a centered frame with the folder on the left and the title
