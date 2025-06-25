@@ -6,7 +6,20 @@
   <title>3D Folder Orbit</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet">
   <style>
-    html, body { margin:0; padding:0; width:100%; height:100%; background:#fff; overflow:hidden; cursor:default; }
+    html, body { margin:0; padding:0; width:100%; height:100%; background:#f0f0f0; overflow:hidden; cursor:default; }
+    #asciiBG{
+      position:fixed;
+      top:0; left:0;
+      width:100%; height:100%;
+      font-family:monospace;
+      font-size:12px;
+      line-height:12px;
+      color:#ccc;
+      background:#f0f0f0;
+      white-space:pre;
+      pointer-events:none;
+      z-index:0;
+    }
     #logo {
       position:fixed;
       top:10px;
@@ -137,6 +150,7 @@
 <body>
   <div id="logo">['[]']'|':[][\]</div>
   <div class="glass" id="glass"></div>
+  <pre id="asciiBG"></pre>
   <canvas id="bgCanvas"></canvas>
   <div id="frame"><div class="square"></div><div class="title-rect"></div><div class="bottom-rect"><div class="grid"></div></div></div>
   <canvas id="fgCanvas"></canvas>
@@ -145,6 +159,7 @@
   <script>
     // Renderer & scene setup
     const bgCanvas = document.getElementById('bgCanvas'), fgCanvas = document.getElementById('fgCanvas'), glass = document.getElementById('glass');
+    const asciiBG = document.getElementById('asciiBG');
     const frame = document.getElementById('frame');
     const bottomRect = frame.querySelector('.bottom-rect');
     const titleRect = frame.querySelector('.title-rect');
@@ -173,6 +188,27 @@
       setTimeout(logoTick, 120);
     }
     logoTick();
+
+    function resizeAscii(){
+      const cols = Math.floor(window.innerWidth/12);
+      const rows = Math.floor(window.innerHeight/12);
+      asciiBG.dataset.cols = cols;
+      asciiBG.dataset.rows = rows;
+    }
+    function drawAscii(){
+      const cols = asciiBG.dataset.cols|0;
+      const rows = asciiBG.dataset.rows|0;
+      const chars = " .,:;!+*?#%$@";
+      let out="";
+      for(let r=0;r<rows;r++){
+        for(let c=0;c<cols;c++) out+=chars[Math.floor(Math.random()*chars.length)];
+        out+='\n';
+      }
+      asciiBG.textContent = out;
+    }
+    window.addEventListener('resize', resizeAscii);
+    resizeAscii();
+    setInterval(drawAscii, 150);
 
     let folders = [];
     let magnetized = null;
@@ -246,7 +282,7 @@
         }
       });
     });
-    const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, antialias:true }); bgRenderer.setClearColor(0xffffff);
+    const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, antialias:true, alpha:true }); bgRenderer.setClearColor(0x000000,0);
     const fgRenderer = new THREE.WebGLRenderer({ canvas: fgCanvas, antialias:true, alpha:true }); fgRenderer.setClearColor(0,0);
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000); camera.position.z=16;
@@ -291,79 +327,76 @@ const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
 
       const txt = label.textContent.trim();
       label.textContent = '';
-      const letters = [];
       for(const ch of txt){
-        const outer = document.createElement('span');
-        outer.className = 'letter';
-        const inner = document.createElement('span');
-        inner.className = 'char';
-        inner.textContent = ch;
-        outer.appendChild(inner);
-        label.appendChild(outer);
-        letters.push(outer);
+        const out = document.createElement('span');
+        out.className = 'letter';
+        const inn = document.createElement('span');
+        inn.className = 'char';
+        inn.textContent = ch;
+        out.appendChild(inn);
+        label.appendChild(out);
       }
 
-      const inners = letters.map(o=>o.querySelector('.char'));
-      label.baseWidths = [];
-      label.baseTotal = 0;
+      const letters = Array.from(label.children);
+      const inners = letters.map(o=>o.firstElementChild);
+      const n = letters.length;
+      let baseWidths = [], baseScaled = [], sumBase = 0, totalW = 0, S = 1;
 
-      requestAnimationFrame(() => {
-        letters.forEach((out,i)=>{
-          const inn = inners[i];
-          inn.style.transform='scaleX(1)';
-          const w = inn.getBoundingClientRect().width;
-          label.baseWidths[i]=w;
-          label.baseTotal += w;
-        });
-        refreshLayout();
-      });
-
-      function refreshLayout(){
-        const containerW = label.getBoundingClientRect().width;
-        label.baseTotal = 0;
-        letters.forEach((out,i)=>{
-          const inn = inners[i];
+      function init(){
+        baseWidths = []; sumBase = 0;
+        letters.forEach(out=>{
+          const inn = out.firstElementChild;
           inn.style.transform = 'scaleX(1)';
           const w = inn.getBoundingClientRect().width;
-          label.baseWidths[i] = w;
-          label.baseTotal += w;
+          baseWidths.push(w);
+          sumBase += w;
         });
-        label.currentWidth = containerW;
-        label.scaleX = containerW / label.baseTotal;
+        totalW = label.getBoundingClientRect().width;
+        S = totalW / sumBase;
+        baseScaled = baseWidths.map(w=>w*S);
         letters.forEach((out,i)=>{
-          out.style.width = (label.baseWidths[i]*label.scaleX)+'px';
-          const ch = inners[i];
-          ch.style.transform = `scaleX(${label.scaleX})`;
-          ch.style.fontVariationSettings = `'wght' ${normalWght}`;
+          const inn = inners[i];
+          out.style.width = baseScaled[i] + 'px';
+          inn.style.width = baseWidths[i] + 'px';
+          inn.style.transform = `scaleX(${S})`;
+          inn.style.fontVariationSettings = `'wght' ${normalWght}`;
         });
+        label.baseWidths = baseWidths.slice();
+        label.baseTotal = sumBase;
       }
 
-      label.refreshLayout = refreshLayout;
+      requestAnimationFrame(init);
+
+      label.refreshLayout = init;
 
       letters.forEach((out,i)=>{
         const inn = inners[i];
         out.addEventListener('mouseenter',()=>{
           if(!label.classList.contains('focused')) return;
-          refreshLayout();
-          const bw = label.baseWidths.map(w=>w*label.scaleX);
-          const baseH = bw[i];
-          const baseN = (i>0?bw[i-1]:0) + (i<bw.length-1?bw[i+1]:0);
-          const baseO = label.currentWidth - baseH - baseN;
-          const otherScale = (label.currentWidth - baseH*hoverScale - baseN*neighborScale)/baseO;
+          const wH = baseScaled[i];
+          const wN = (i>0?baseScaled[i-1]:0) + (i<n-1?baseScaled[i+1]:0);
+          const wO = totalW - wH - wN;
+          const R_h = hoverScale, R_n = neighborScale;
+          const R_o = (totalW - wH*R_h - wN*R_n) / wO;
           letters.forEach((o,j)=>{
             const ch = inners[j];
-            let sc, wght;
-            if(j===i){ sc=hoverScale; wght=hoverWght; }
-            else if(j===i-1 || j===i+1){ sc=neighborScale; wght=neighborWght; }
-            else { sc=otherScale; wght=normalWght; }
-            o.style.width = (label.baseWidths[j]*label.scaleX*sc)+'px';
-            ch.style.transform = `scaleX(${label.scaleX*sc})`;
+            let R,wght;
+            if(j===i){ R=R_h; wght=hoverWght; }
+            else if(j===i-1||j===i+1){ R=R_n; wght=neighborWght; }
+            else { R=R_o; wght=normalWght; }
+            o.style.width = baseScaled[j]*R + 'px';
+            ch.style.transform = `scaleX(${S*R})`;
             ch.style.fontVariationSettings = `'wght' ${wght}`;
           });
         });
         out.addEventListener('mouseleave',()=>{
           if(!label.classList.contains('focused')) return;
-          refreshLayout();
+          letters.forEach((o,j)=>{
+            const ch = inners[j];
+            o.style.width = baseScaled[j] + 'px';
+            ch.style.transform = `scaleX(${S})`;
+            ch.style.fontVariationSettings = `'wght' ${normalWght}`;
+          });
         });
       });
     }
@@ -416,20 +449,14 @@ const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
       f.userData.name = name;
       const label = document.createElement('div');
       label.className = 'folder-label';
-      label.innerHTML = [...name]
-        .map(ch=>`<span class="letter"><span class="char">${ch}</span></span>`)
-        .join('');
+      label.textContent = name;
       labelsDiv.appendChild(label);
-      label.dataset.baseW = label.offsetWidth;
-      label.dataset.baseH = label.offsetHeight;
-      label.dataset.baseSize = parseFloat(getComputedStyle(label).fontSize);
-      label.baseWidths = Array.from(label.querySelectorAll('.char')).map(s=>{
-        const b = s.getBoundingClientRect().width; return b; });
-      label.baseTotal = label.baseWidths.reduce((a,b)=>a+b,0);
-      f.userData.label = label;
-      f.userData.letters = Array.from(label.querySelectorAll('.letter'));
-      f.userData.chars = Array.from(label.querySelectorAll('.char'));
       setupActiveLabel(label);
+      requestAnimationFrame(()=>{
+        label.dataset.baseSize = parseFloat(getComputedStyle(label).fontSize);
+        label.dataset.baseH = label.offsetHeight;
+      });
+      f.userData.label = label;
       scene.add(f);
       folders.push(f);
     }
