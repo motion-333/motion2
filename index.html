@@ -44,6 +44,22 @@
       color:#1449ff;
       z-index:2;
     }
+    #vignette {
+      position:fixed;
+      inset:0;
+      pointer-events:none;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,0.6), transparent 60%),
+        radial-gradient(circle at 70% 40%, rgba(255,255,255,0.5), transparent 70%),
+        radial-gradient(circle at 50% 80%, rgba(255,255,255,0.4), transparent 60%);
+      filter: blur(40px);
+      animation:breathe 6s ease-in-out infinite alternate;
+      z-index:0;
+    }
+    @keyframes breathe {
+      from { opacity:0.4; }
+      to   { opacity:0.8; }
+    }
     /* Grid overlay */
     #overlay {
       position:fixed;
@@ -107,6 +123,7 @@
 </head>
 <body>
   <!-- top bar removed -->
+  <div id="vignette"></div>
   <pre id="ascii"></pre>
   <div class="glass" id="glass"></div>
   <canvas id="bgCanvas"></canvas>
@@ -130,26 +147,35 @@
   <script>
     const ascii = document.getElementById('ascii');
     const asciiChars = " .:-=+*#%@";
-    window.asciiHover = '';
     function updateAscii(){
       const cols = Math.floor(window.innerWidth/9);
       const rows = Math.floor(window.innerHeight/16);
-      let out='';
+      const grid = Array.from({length:rows},()=>Array(cols).fill(' '));
       for(let r=0;r<rows;r++){
         for(let c=0;c<cols;c++){
-          if(window.asciiHover && Math.random()<0.02){
-            out += window.asciiHover;
-            c += window.asciiHover.length-1;
-          } else {
-            out += asciiChars[Math.floor(Math.random()*asciiChars.length)];
+          grid[r][c] = asciiChars[Math.floor(Math.random()*asciiChars.length)];
+        }
+      }
+      folders.forEach(f=>{
+        const v = f.position.clone().project(camera);
+        const cx = Math.round((v.x*0.5+0.5)*cols);
+        const cy = Math.round((-v.y*0.5+0.5)*rows);
+        let radius = 6;
+        let chars = ['$','€'];
+        if(f.userData.hovered){
+          radius *= 1.2 + 0.2*Math.sin(performance.now()/500);
+          chars = ['$','€','£','%'];
+        }
+        for(let a=0;a<Math.PI*2;a+=Math.PI/10){
+          const x = Math.round(cx + radius*Math.cos(a));
+          const y = Math.round(cy + radius*Math.sin(a));
+          if(x>=0 && x<cols && y>=0 && y<rows){
+            grid[y][x] = chars[Math.floor(Math.random()*chars.length)];
           }
         }
-        out += '\n';
-      }
-      ascii.textContent = out;
+      });
+      ascii.textContent = grid.map(row=>row.join('')).join('\n');
     }
-    updateAscii();
-    setInterval(updateAscii,150);
   </script>
   <script>
     // Renderer & scene setup
@@ -365,7 +391,6 @@
      overlay.classList.add('show');
      overlay.classList.remove('visible');
       setTimeout(()=>ascii.classList.add('front'), 200);
-      window.asciiHover = name;
       labelsContainer.classList.add('hidden');
       setupInteractiveText(name);
       loadLayout(name);
@@ -375,7 +400,6 @@
      overlay.classList.remove('visible');
      overlay.addEventListener('transitionend', () => overlay.classList.remove('show'), { once: true });
       setTimeout(()=>ascii.classList.remove('front'), 200);
-      window.asciiHover = '';
       labelsContainer.classList.remove('hidden');
    }
 
@@ -391,7 +415,7 @@
         ud.clickStart = performance.now();
         ud.startPos.copy(f.position);
         ud.startScale.copy(f.scale);
-        ud.targetPos.set(-6,3.2,8);
+        ud.targetPos.set(-5.6,3.6,8);
         ud.targetScale.set(0.6,0.6,0.6);
         glass.classList.add('visible');
         showGrid(ud.name);
@@ -438,11 +462,7 @@
       else {
         raycaster.setFromCamera(mouse, camera);
         const hoverHits = raycaster.intersectObjects(folders.map(f=>f.userData.front));
-        if(activeFolder){
-          window.asciiHover = activeFolder.userData.name;
-        } else {
-          window.asciiHover = hoverHits.length ? hoverHits[0].object.parent.userData.name : '';
-        }
+        folders.forEach(f=>{ f.userData.hovered = hoverHits.some(h=>h.object===f.userData.front); });
         const accel = Math.hypot(targetMouse.x-currentMouse.x, targetMouse.y-currentMouse.y);
         if(magnetized && accel>2) magnetized = null;
         folders.forEach((f,idx)=>{
@@ -532,7 +552,9 @@
         lbl.style.left = `${x}px`;
         lbl.style.top = `${y + 20}px`;
       });
+      updateAscii();
     }
+    updateAscii();
     animate();
   </script>
 </body>
