@@ -26,10 +26,10 @@
     /* ASCII background */
     #ascii {
       position:fixed;
-      top:-16px;
+      top:-32px;
       left:0;
       width:100%;
-      height:100%;
+      height:calc(100% + 64px);
       font-family:monospace;
       font-size:16px;
       line-height:16px;
@@ -149,11 +149,36 @@
     const ascii = document.getElementById('ascii');
     const asciiChars = " .:-=+*#%@";
     let lastAscii = 0;
+    const messages = ["['[]']'|':[][\\]", "MOTION"];
+    let msgPhase = 0, msgIndex = 0, msgDelete = false, msgDelay = 0, lastType = 0;
+    function getTypedMessage(now){
+      if(now < msgDelay) return messages[msgPhase].slice(0, msgIndex);
+      if(now - lastType > 120){
+        lastType = now;
+        if(!msgDelete){
+          msgIndex++;
+          if(msgIndex > messages[msgPhase].length){
+            msgIndex = messages[msgPhase].length;
+            msgDelete = true;
+            msgDelay = now + 800;
+          }
+        } else {
+          msgIndex--;
+          if(msgIndex < 0){
+            msgIndex = 0;
+            msgDelete = false;
+            msgPhase = (msgPhase + 1) % messages.length;
+            msgDelay = now + 300;
+          }
+        }
+      }
+      return messages[msgPhase].slice(0, msgIndex);
+    }
     function updateAscii(now){
       if(now - lastAscii < 83) return;
       lastAscii = now;
       const cols = Math.floor(window.innerWidth/9);
-      const rows = Math.floor(window.innerHeight/16);
+      const rows = Math.floor(window.innerHeight/16) + 4;
       const grid = Array.from({length:rows},()=>Array(cols).fill(' '));
       for(let r=0;r<rows;r++){
         for(let c=0;c<cols;c++){
@@ -164,8 +189,8 @@
         const v = f.position.clone().project(camera);
         const px = (v.x*0.5+0.5)*window.innerWidth;
         const py = (-v.y*0.5+0.5)*window.innerHeight;
-        const cx = Math.round(px/9);
-        const cy = Math.round(py/16);
+        const cx = Math.round(px/9) - 1;
+        const cy = Math.round((py + 32)/16) - 1;
         let radius = 6;
         if(f.userData.hovered){
           radius *= 1.2 + 0.2*Math.sin(performance.now()/500);
@@ -173,7 +198,7 @@
         const rOut = radius + 1;
         for(let y=-rOut; y<=rOut; y++){
           for(let x=-rOut; x<=rOut; x++){
-            const dist = Math.hypot(x,y);
+            const dist = Math.hypot(x*16/9,y);
             const tx = cx + x, ty = cy + y;
             if(tx>=0 && tx<cols && ty>=0 && ty<rows){
               if(dist <= radius-0.5){
@@ -185,6 +210,14 @@
           }
         }
       });
+      // typing effect line
+      const msg = getTypedMessage(now);
+      if(msg){
+        const start = Math.max(0, Math.floor((cols - msg.length)/2));
+        for(let i=0;i<msg.length && start+i<cols;i++){
+          grid[1][start+i] = msg[i];
+        }
+      }
       ascii.textContent = grid.map(row=>row.join('')).join('\n');
     }
   </script>
