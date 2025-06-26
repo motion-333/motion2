@@ -50,7 +50,7 @@
     .cell { background:none; border:1px solid #1449ff; aspect-ratio:1/1; }
     .placed { position:absolute; overflow:hidden; border:2px solid #1449ff; box-sizing:border-box; }
     .placed img, .placed video { width:100%; height:100%; object-fit:cover; pointer-events:none; }
-    .text-item { width:100%; height:100%; display:block; font-family:'Outfit', sans-serif; background:#fff; margin:0; padding:0; white-space:pre-wrap; box-sizing:border-box; outline:none; border:2px solid #1449ff; font-variation-settings:'wght' 400; }
+    .text-item { width:100%; height:100%; display:block; font-family:'Outfit', sans-serif; background:#fff; margin:0; padding:0; white-space:pre-wrap; box-sizing:border-box; outline:none; font-variation-settings:'wght' 400; color:#1449ff; }
   </style>
 </head>
 <body>
@@ -129,7 +129,7 @@
       const geom = new THREE.ExtrudeGeometry(shape, { depth:0.03, bevelEnabled:true, bevelThickness:0.025, bevelSize:0.025, bevelSegments:2 });
       const front = new THREE.Mesh(geom, frontMat); front.geometry.translate(0,0.9,0); front.position.z=0.015; front.castShadow=true; g.add(front);
       const back = new THREE.Mesh(geom.clone(), backMat); back.scale.y=1.07; back.position.set(0,0.05,-0.015); back.receiveShadow=true; g.add(back);
-      g.scale.set(0.7,0.7,0.7);
+      g.scale.set(0.9,0.9,0.9);
       const lipShape = new THREE.Shape();
       lipShape.moveTo(-1.25,0).quadraticCurveTo(-1.25,0.2,-1.1,0.2).lineTo(-0.6,0.2)
               .quadraticCurveTo(-0.45,0.2,-0.3,0).lineTo(-0.3,-0.3)
@@ -148,7 +148,11 @@
         innerR:1.2, hoverPhase:0,
         returning:false, returnStart:0, returnFrom:new THREE.Vector3(), returnTo:new THREE.Vector3(), returnDuration:1000,
         spin:false, spinElapsed:0, spinDuration:1,
-        magnetStart:0
+        magnetStart:0,
+        startScale:new THREE.Vector3(),
+        targetScale:new THREE.Vector3(),
+        scaleReturnFrom:new THREE.Vector3(),
+        scaleReturnTo:new THREE.Vector3()
       };
       return g;
     }
@@ -178,7 +182,10 @@
     for(let i=0;i<cols*rows;i++){ const c=document.createElement('div'); c.className='cell'; grid.appendChild(c); }
     function getSizes(){ const cell=grid.querySelector('.cell'); const rect=cell.getBoundingClientRect(); return {size:rect.width, step:rect.width+gap}; }
     let currentFolder=null, key='', items=[]; let offsetX=0, offsetY=0; let lastLayout=null;
-    function applyTransform(){ gridContainer.style.transform=`translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`; }
+    function applyTransform(){
+      const {step} = getSizes();
+      gridContainer.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY + step*2}px))`;
+    }
     function render(){ const {size,step}=getSizes(); gridContainer.querySelectorAll('.placed').forEach(el=>el.remove()); items.forEach((item,i)=>{
         const col=Math.min(Math.max(0,item.col),cols-item.cols); const row=Math.min(Math.max(0,item.row),rows-item.rows);
         const w=item.cols*size+(item.cols-1)*gap; const h=item.rows*size+(item.rows-1)*gap;
@@ -268,7 +275,9 @@
         ud.focused = true;
         ud.clickStart = performance.now();
         ud.startPos.copy(f.position);
-        ud.targetPos.set(-5,1.5,8);
+        ud.startScale.copy(f.scale);
+        ud.targetPos.set(-5.5,2.2,8);
+        ud.targetScale.set(0.6,0.6,0.6);
         glass.classList.add('visible');
         showGrid(ud.name);
       } else {
@@ -276,6 +285,8 @@
         ud.returnStart = performance.now();
         ud.returnFrom.copy(f.position);
         ud.returnTo.copy(ud.startPos);
+        ud.scaleReturnFrom.copy(f.scale);
+        ud.scaleReturnTo.copy(ud.startScale);
         glass.classList.remove('visible');
         hideGrid();
       }
@@ -336,20 +347,22 @@
             f.rotation.z += (Math.cos(ud.hoverPhase)*breeze*0.5 - f.rotation.z)*0.2;
             return;
           }
+          if(ud.returning){
+            const t = Math.min((now-ud.returnStart)/ud.returnDuration,1);
+            f.position.lerpVectors(ud.returnFrom, ud.returnTo, ease(t));
+            f.scale.lerpVectors(ud.scaleReturnFrom, ud.scaleReturnTo, ease(t));
+            if(t>=1){ ud.returning=false; ud.focused=false; }
+            return;
+          }
+          if(ud.focused){
+            const t = Math.min((now-ud.clickStart)/ud.duration,1);
+            f.position.lerpVectors(ud.startPos, ud.targetPos, ease(t));
+            f.scale.lerpVectors(ud.startScale, ud.targetScale, ease(t));
+            return;
+          }
           if(magnetized===f && d>=ud.innerR) magnetized=null;
           f.rotation.y += (0 - f.rotation.y)*0.2;
           f.rotation.z += (0 - f.rotation.z)*0.2;
-          if(ud.returning) {
-            const t = Math.min((now-ud.returnStart)/ud.returnDuration,1);
-            f.position.lerpVectors(ud.returnFrom, ud.returnTo, ease(t));
-            if(t>=1) { ud.returning=false; ud.focused=false; }
-            return;
-          }
-          if(ud.focused) {
-            const t = Math.min((now-ud.clickStart)/ud.duration,1);
-            f.position.lerpVectors(ud.startPos, ud.targetPos, ease(t));
-            return;
-          }
           if(hoverHits.find(h=>h.object===ud.front)) ud.front.rotation.x += (THREE.MathUtils.degToRad(15) - ud.front.rotation.x)*0.1;
           else ud.front.rotation.x += (0 - ud.front.rotation.x)*0.1;
           ud.curvePhase += 0.01;
