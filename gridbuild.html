@@ -91,7 +91,7 @@
       return messages[msgPhase].slice(0,msgIndex);
     }
     function updateAscii(now){
-      if(now-lastAscii<83) return;
+      if(now-lastAscii<50) return;
       lastAscii=now;
       const cols=Math.floor(window.innerWidth/9);
       const rows=Math.floor(window.innerHeight/16)+4;
@@ -103,7 +103,7 @@
       if(msg){
         const start=Math.max(0,Math.floor((cols-msg.length)/2));
         for(let i=0;i<msg.length && start+i<cols;i++)
-          grid[1][start+i]=msg[i];
+          grid[2][start+i]=msg[i];
       }
       asciiEl.textContent=grid.map(r=>r.join('')).join('\n');
     }
