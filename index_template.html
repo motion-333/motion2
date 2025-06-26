@@ -13,7 +13,7 @@
     .glass.visible { opacity:1; }
     /* Canvas layers */
     #bgCanvas, #fgCanvas { position:absolute; top:0; left:0; width:100%; height:100%; }
-    #bgCanvas { z-index:1; }
+    #bgCanvas { z-index:0; }
     #fgCanvas { z-index:3; pointer-events:none; }
     /* Labels */
     #labels { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:4; font-family:'Outfit',sans-serif; }
@@ -31,7 +31,7 @@
       color:#ddd;
       white-space:pre;
       pointer-events:none;
-      z-index:0;
+      z-index:1;
     }
     /* Grid overlay */
     #overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:2; pointer-events:none; }
@@ -120,7 +120,8 @@
     // logo removed
 
     /* top bar scripts removed */
-    const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, antialias:true }); bgRenderer.setClearColor(0xffffff);
+    const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, antialias:true, alpha:true });
+    bgRenderer.setClearColor(0x000000, 0);
     const fgRenderer = new THREE.WebGLRenderer({ canvas: fgCanvas, antialias:true, alpha:true }); fgRenderer.setClearColor(0,0);
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000); camera.position.z=16;
@@ -337,7 +338,7 @@
         ud.clickStart = performance.now();
         ud.startPos.copy(f.position);
         ud.startScale.copy(f.scale);
-        ud.targetPos.set(-5.5,2.2,8);
+        ud.targetPos.set(-6,2.6,8);
         ud.targetScale.set(0.6,0.6,0.6);
         glass.classList.add('visible');
         showGrid(ud.name);
