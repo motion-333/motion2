@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Folder Orbit</title>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,100..1000&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin:0; padding:0; width:100%; height:100%; background:#f0f0f0; overflow:hidden; cursor:default; }
+    #asciiBG{
+      position:fixed;
+      top:0; left:0; right:0; bottom:0;
+      width:100vw; height:100vh;
+      margin:0;
+      font-family:monospace;
+      font-size:12px;
+      line-height:12px;
+      color:#ccc;
+      background:#f0f0f0;
+      white-space:pre;
+      overflow:hidden;
+      pointer-events:none;
+      z-index:0;
+      text-rendering:optimizeSpeed;
+    }
+    #logo {
+      position:fixed;
+      top:10px;
+      left:50%;
+      transform:translateX(-50%);
+      color:#1449ff;
+      font-family:'Outfit',sans-serif;
+      font-size:20px;
+      letter-spacing:2px;
+      width:140px;
+      text-align:center;
+      overflow:hidden;
+      z-index:5;
+    }
+    /* Glass overlay */
+    .glass { position:fixed; top:0; left:0; width:100vw; height:100vh; backdrop-filter:blur(20px) brightness(0.95); opacity:0; transition:opacity 0.8s ease-in-out; pointer-events:none; z-index:2; }
+    .glass.visible { opacity:1; }
+    /* Canvas layers */
+    #bgCanvas, #fgCanvas { position:absolute; top:0; left:0; width:100%; height:100%; }
+    #bgCanvas { z-index:1; }
+    #fgCanvas { z-index:3; pointer-events:none; }
+    #labels { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:4; transition:opacity 0.5s ease; }
+    #labels.fade-out { opacity:0; }
+    /* Grid overlay was removed in this version */
+    .folder-label {
+      position:absolute;
+      font-family:'Outfit',sans-serif;
+      color:#1449ff;
+      font-size:14px;
+      white-space:nowrap;
+      transform:translate(-50%,0);
+      text-rendering:geometricPrecision;
+      transition:transform 0.3s ease, font-size 0.3s ease, opacity 0.2s ease;
+      will-change:transform;
+      -webkit-font-smoothing:antialiased;
+      contain:paint;
+      pointer-events:none;
+      opacity:1;
+    }
+    .folder-label .letter{
+      display:inline-block;
+      overflow:hidden;
+      transition:width 0.2s ease;
+    }
+    .folder-label .char{
+      display:inline-block;
+      width:100%;
+      transform-origin:center center;
+      transition:transform 0.2s ease, font-variation-settings 0.2s ease;
+      font-variation-settings:'wght' 400;
+    }
+  </style>
+</head>
+<body>
+  <div id="logo">['[]']'|':[][\]</div>
+  <div class="glass" id="glass"></div>
+  <pre id="asciiBG"></pre>
+  <canvas id="bgCanvas"></canvas>
+  <canvas id="fgCanvas"></canvas>
+  <div id="labels"></div>
+  <script src="https://unpkg.com/three@0.148.0/build/three.min.js"></script>
+  <script>
+    // Renderer & scene setup
+    const bgCanvas = document.getElementById('bgCanvas'), fgCanvas = document.getElementById('fgCanvas'), glass = document.getElementById('glass');
+    const asciiBG = document.getElementById('asciiBG');
+    const labelsDiv = document.getElementById('labels');
+    const logoEl = document.getElementById('logo');
+    const logoText = "['[]']'|':[][\\]";
+    let logoIndex = 0, logoDir = 1;
+    function logoTick() {
+      logoEl.textContent = logoText.slice(0, logoIndex);
+      if (logoDir === 1) {
+        logoIndex++;
+        if (logoIndex > logoText.length) {
+          logoDir = -1;
+          logoIndex = logoText.length;
+          setTimeout(logoTick, 800);
+          return;
+        }
+      } else {
+        logoIndex--;
+        if (logoIndex < 0) {
+          logoDir = 1;
+          logoIndex = 0;
+        }
+      }
+      setTimeout(logoTick, 120);
+    }
+    logoTick();
+
+    let hoverName = null;
+    function resizeAscii(){
+      const cols = Math.ceil(window.innerWidth/10)+2;
+      const rows = Math.ceil(window.innerHeight/12)+2;
+      asciiBG.dataset.cols = cols;
+      asciiBG.dataset.rows = rows;
+      drawAscii();
+    }
+    function drawAscii(){
+      const cols = asciiBG.dataset.cols|0;
+      const rows = asciiBG.dataset.rows|0;
+      const chars = " .,:;!+*?#%$@";
+      let out="";
+      for(let r=0;r<rows;r++){
+        for(let c=0;c<cols;c++){
+          if(hoverName && Math.random()<0.02){
+            out+=hoverName[Math.floor(Math.random()*hoverName.length)];
+          }else{
+            out+=chars[Math.floor(Math.random()*chars.length)];
+          }
+        }
+        out+='\n';
+      }
+      asciiBG.textContent = out;
+    }
+    window.addEventListener('resize', resizeAscii);
+    resizeAscii();
+    setInterval(drawAscii, 150);
+
+    let folders = [];
+    let magnetized = null;
+
+  document.addEventListener('mousemove', e => {
+      folders.forEach(f=>{
+        const letters = f.userData.letters || [];
+        const chars = f.userData.chars || [];
+        const label = f.userData.label;
+        if(!label) return;
+        const baseWidths = label.baseWidths;
+        const baseTotal = label.baseTotal;
+        if((magnetized===f || f.userData.hovered) && !f.userData.focused){
+          const rect = label.getBoundingClientRect();
+          const factors = letters.map(l=>{
+            const r = l.getBoundingClientRect();
+            const cx = (r.left + r.right)/2;
+            const dist = Math.abs(e.clientX - cx);
+            const inf = Math.max(0, 1 - dist/rect.width*2);
+            return 1 + inf*0.5;
+          });
+          const newTotal = factors.reduce((sum,f,i)=>sum+baseWidths[i]*f,0);
+          const ratio = baseTotal / newTotal;
+          factors.forEach((fct,i)=>{
+            const scale = fct*ratio;
+            const w = 400 + (scale-1)*400;
+            chars[i].style.transform = `scaleX(${scale})`;
+            chars[i].style.fontVariationSettings = `'wght' ${w.toFixed(0)}`;
+          });
+        } else {
+          chars.forEach(ch=>{
+            ch.style.transform='scaleX(1)';
+            ch.style.fontVariationSettings = `'wght' 400`;
+          });
+        }
+      });
+  });
+
+
+    labelsDiv.addEventListener('mouseleave', ()=>{
+      folders.forEach(f=>{
+        if(f.userData.chars){
+          f.userData.chars.forEach(ch=>{
+            ch.style.transform = 'scaleX(1)';
+            ch.style.fontVariationSettings = `'wght' 400`;
+          });
+        }
+      });
+    });
+    const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, antialias:true, alpha:true }); bgRenderer.setClearColor(0x000000,0);
+    const fgRenderer = new THREE.WebGLRenderer({ canvas: fgCanvas, antialias:true, alpha:true }); fgRenderer.setClearColor(0,0);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000); camera.position.z=16;
+    window.addEventListener('resize', ()=>{
+      bgRenderer.setSize(window.innerWidth, window.innerHeight);
+      fgRenderer.setSize(window.innerWidth, window.innerHeight);
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+    });
+    bgRenderer.setSize(window.innerWidth, window.innerHeight);
+    fgRenderer.setSize(window.innerWidth, window.innerHeight);
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.1);
+    dirLight.position.set(0,0,4);
+    scene.add(dirLight);
+
+    // Raycaster & cursor
+    const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), cursor3D = new THREE.Vector3();
+    let targetMouse = {x:0,y:0}, currentMouse = {x:0,y:0};
+    window.addEventListener('mousemove', e => {
+      const nx = (e.clientX/window.innerWidth - 0.5)*2;
+      const ny = -(e.clientY/window.innerHeight - 0.5)*2;
+      targetMouse.x = nx; targetMouse.y = ny;
+      mouse.x = (e.clientX/window.innerWidth)*2 - 1;
+      mouse.y = -(e.clientY/window.innerHeight)*2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const d = -raycaster.ray.origin.z / raycaster.ray.direction.z;
+      cursor3D.copy(raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(d)));
+    });
+
+const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
+    const labelPosV = new THREE.Vector3();
+    function updateLabels(){
+      folders.forEach(f=>{
+        const label = f.userData.label;
+        if(!label) return;
+        labelPosV.copy(f.position);
+        labelPosV.project(camera);
+        const x = (labelPosV.x*0.5+0.5)*window.innerWidth;
+        const y = (-labelPosV.y*0.5+0.5)*window.innerHeight;
+        label.style.left = x + "px";
+        label.style.top = (y+10)+"px";
+      });
+    }
+
+    function setupActiveLabel(label){
+      const hoverScale = 1.8;
+      const neighborScale = 1.2;
+      const normalWght = 400;
+      const neighborWght = 600;
+      const hoverWght = 900;
+
+      const txt = label.textContent.trim();
+      label.textContent = '';
+      for(const ch of txt){
+        const out = document.createElement('span');
+        out.className = 'letter';
+        const inn = document.createElement('span');
+        inn.className = 'char';
+        inn.textContent = ch;
+        out.appendChild(inn);
+        label.appendChild(out);
+      }
+
+      const letters = Array.from(label.children);
+      const inners = letters.map(o=>o.firstElementChild);
+      const n = letters.length;
+      let baseWidths = [], baseScaled = [], sumBase = 0, totalW = 0, S = 1;
+
+      function init(){
+        baseWidths = []; sumBase = 0;
+        letters.forEach(out=>{
+          const inn = out.firstElementChild;
+          inn.style.transform = 'scaleX(1)';
+          const w = inn.getBoundingClientRect().width;
+          baseWidths.push(w);
+          sumBase += w;
+        });
+        totalW = label.getBoundingClientRect().width;
+        S = totalW / sumBase;
+        baseScaled = baseWidths.map(w=>w*S);
+        letters.forEach((out,i)=>{
+          const inn = inners[i];
+          out.style.width = baseScaled[i] + 'px';
+          inn.style.width = baseWidths[i] + 'px';
+          inn.style.transform = `scaleX(${S})`;
+          inn.style.fontVariationSettings = `'wght' ${normalWght}`;
+        });
+        label.baseWidths = baseWidths.slice();
+        label.baseTotal = sumBase;
+      }
+
+      requestAnimationFrame(init);
+
+
+      letters.forEach((out,i)=>{
+        const inn = inners[i];
+        out.addEventListener('mouseenter',()=>{
+          const wH = baseScaled[i];
+          const wN = (i>0?baseScaled[i-1]:0) + (i<n-1?baseScaled[i+1]:0);
+          const wO = totalW - wH - wN;
+          const R_h = hoverScale, R_n = neighborScale;
+          const R_o = (totalW - wH*R_h - wN*R_n) / wO;
+          letters.forEach((o,j)=>{
+            const ch = inners[j];
+            let R,wght;
+            if(j===i){ R=R_h; wght=hoverWght; }
+            else if(j===i-1||j===i+1){ R=R_n; wght=neighborWght; }
+            else { R=R_o; wght=normalWght; }
+            o.style.width = baseScaled[j]*R + 'px';
+            ch.style.transform = `scaleX(${S*R})`;
+            ch.style.fontVariationSettings = `'wght' ${wght}`;
+          });
+        });
+        out.addEventListener('mouseleave',()=>{
+          letters.forEach((o,j)=>{
+            const ch = inners[j];
+            o.style.width = baseScaled[j] + 'px';
+            ch.style.transform = `scaleX(${S})`;
+            ch.style.fontVariationSettings = `'wght' ${normalWght}`;
+          });
+        });
+      });
+    }
+
+    // Folder factory
+    function createFolder() {
+      const g = new THREE.Group();
+      const frontMat = new THREE.MeshStandardMaterial({ color:0x89d8fd, roughness:0.4, metalness:0.2 });
+      const backMat = new THREE.MeshStandardMaterial({ color:0x5bbde9, roughness:0.45, metalness:0.15 });
+      const w=2.5,h=1.8,r=0.15;
+      const shape = new THREE.Shape();
+      shape.moveTo(-w/2+r,-h/2).lineTo(w/2-r,-h/2).quadraticCurveTo(w/2,-h/2,w/2,-h/2+r)
+           .lineTo(w/2,h/2-r).quadraticCurveTo(w/2,h/2,w/2-r,h/2)
+           .lineTo(-w/2+r,h/2).quadraticCurveTo(-w/2,h/2,-w/2,h/2-r)
+           .lineTo(-w/2,-h/2+r).quadraticCurveTo(-w/2,-h/2,-w/2+r,-h/2);
+      const geom = new THREE.ExtrudeGeometry(shape, { depth:0.03, bevelEnabled:true, bevelThickness:0.025, bevelSize:0.025, bevelSegments:2 });
+      const front = new THREE.Mesh(geom, frontMat); front.geometry.translate(0,0.9,0); front.position.z=0.015; front.castShadow=true; g.add(front);
+      const back = new THREE.Mesh(geom.clone(), backMat); back.scale.y=1.07; back.position.set(0,0.05,-0.015); back.receiveShadow=true; g.add(back);
+      // lip
+      const lipShape = new THREE.Shape();
+      lipShape.moveTo(-1.25,0).quadraticCurveTo(-1.25,0.2,-1.1,0.2).lineTo(-0.6,0.2)
+              .quadraticCurveTo(-0.45,0.2,-0.3,0).lineTo(-0.3,-0.3)
+              .quadraticCurveTo(-0.32,-0.43,-0.6,-0.43).lineTo(-1.22,-0.42)
+              .quadraticCurveTo(-1.28,-0.38,-1.24,-0.3).lineTo(-1.25,0);
+      const lip = new THREE.Mesh(new THREE.ExtrudeGeometry(lipShape, { depth:0.03, bevelEnabled:true, bevelThickness:0.025, bevelSize:0.025, bevelSegments:2 }), backMat);
+      lip.position.set(0,1.9,-0.015); lip.receiveShadow=true; g.add(lip);
+      // random dir
+      const dir = new THREE.Vector3((Math.random()-0.5)*2,(Math.random()-0.5)*2,0).normalize();
+      g.userData = {
+        front, dir,
+        speed:0.002 + Math.random()*0.001,
+        curvePhase:Math.random()*Math.PI*2,
+        curveScale:0.005 + Math.random()*0.003,
+        focused:false, clickStart:0, startPos:new THREE.Vector3(), targetPos:new THREE.Vector3(), duration:2000,
+        innerR:1.2, hoverPhase:0,
+        phase:null,
+        spin:false, spinElapsed:0, spinDuration:1,
+        magnetStart:0,
+        name:null,
+        hovered:false
+      };
+      return g;
+    }
+
+    const folderNames = FOLDER_NAMES_PLACEHOLDER;
+
+    // create and add folders
+    folders = [];
+    for(const name of folderNames){
+      const f = createFolder();
+      f.userData.name = name;
+      const label = document.createElement('div');
+      label.className = 'folder-label';
+      label.textContent = name;
+      labelsDiv.appendChild(label);
+      setupActiveLabel(label);
+      const letters = Array.from(label.querySelectorAll(".letter"));
+      const chars = letters.map(l=>l.firstElementChild);
+      f.userData.letters = letters;
+      f.userData.chars = chars;
+      label.dataset.baseSize = parseFloat(getComputedStyle(label).fontSize);
+      label.dataset.baseH = label.offsetHeight;
+      f.userData.label = label;
+      scene.add(f);
+      folders.push(f);
+    }
+
+    // intro animation
+    const introDur=3000, scatterDur=2000;
+const startTime=performance.now();
+
+
+    // click behavior
+    window.addEventListener('click', () => {
+      raycaster.setFromCamera(mouse, camera);
+      const hit = raycaster.intersectObjects(folders.map(f => f.userData.front))[0];
+      if(!hit) return;
+      const f = hit.object.parent, ud = f.userData;
+      if(!ud.focused){
+        ud.focused = true;
+        ud.phase = 'move';
+        ud.clickStart = performance.now();
+        ud.startPos.copy(f.position);
+        ud.targetPos.set(0, 0, 8);
+        glass.classList.add('visible');
+        labelsDiv.classList.add('fade-out');
+      } else {
+        ud.returning = true;
+        ud.returnStart = performance.now();
+        ud.returnFrom.copy(f.position);
+        ud.returnTo.copy(ud.startPos);
+        glass.classList.remove('visible');
+        labelsDiv.classList.remove('fade-out');
+      }
+    });
+
+    // animation loop
+    function animate(){
+      requestAnimationFrame(animate);
+      const now = performance.now(), dt = now - startTime;
+      // intro
+      if(dt < introDur) {
+        const a = (dt/introDur)*Math.PI*2;
+        folders.forEach((f,i)=>{
+          const th = (i/folders.length)*Math.PI*2 + a;
+          f.position.set(Math.cos(th)*5, Math.sin(th)*5, 0);
+        });
+      }
+      // scatter
+      else if(dt < introDur+scatterDur) {
+        const p = (dt-introDur)/scatterDur;
+        folders.forEach((f,i)=>{
+          const ti = Math.max(Math.min(p*folders.length-i,1),0), ei = ease(ti);
+          const th = (i/folders.length)*Math.PI*2;
+          const ctr = new THREE.Vector3(Math.cos(th)*5, Math.sin(th)*5, 0);
+          f.position.copy(ctr.add(f.userData.dir.clone().multiplyScalar(ei*3)));
+        });
+      }
+      // main
+      else {
+        raycaster.setFromCamera(mouse, camera);
+        const hoverHits = raycaster.intersectObjects(folders.map(f=>f.userData.front));
+        hoverName = hoverHits[0] ? hoverHits[0].object.parent.userData.name : null;
+        const accel = Math.hypot(targetMouse.x-currentMouse.x, targetMouse.y-currentMouse.y);
+        folders.forEach(f => { f.userData.hovered = hoverHits.find(h=>h.object===f.userData.front); });
+        if(magnetized && accel>2) magnetized = null;
+        folders.forEach(f=>{
+          const ud = f.userData;
+          const to = cursor3D.clone().sub(f.position);
+          const d = to.length();
+          // release after 2s
+          if(magnetized===f && now-ud.magnetStart>2000) magnetized=null;
+          // fast-pass spin
+          if(d<ud.innerR && accel>3 && !ud.spin) { ud.spin=true; ud.spinElapsed=0; }
+          if(ud.spin) {
+            ud.spinElapsed+=0.1;
+            f.rotation.y = (ud.spinElapsed/ud.spinDuration)*Math.PI*2;
+            if(ud.spinElapsed>=ud.spinDuration) { ud.spin=false; f.rotation.y=0; }
+            return;
+          }
+          // magnet & repel - one folder
+          if((magnetized===null || magnetized===f) && d<ud.innerR && !ud.focused) {
+            magnetized = f;
+            ud.magnetStart = now;
+            // repel strict
+            const repel = new THREE.Vector3();
+            folders.forEach(o=>{
+              if(o!==f) {
+                const dv = f.position.clone().sub(o.position);
+                const distSq = dv.lengthSq();
+                if (distSq < 16) {
+                  repel.add(dv.normalize().multiplyScalar(0.05));
+                }
+              }
+            });
+            f.position.add(repel);
+            // magnet toward cursor
+            const offset=new THREE.Vector3(0,-0.9,0);
+            f.position.lerp(cursor3D.clone().add(offset), 0.05);
+            // breeze tilt - quicker stabilize
+            ud.hoverPhase += 0.1;
+            ud.front.rotation.x += (THREE.MathUtils.degToRad(15) - ud.front.rotation.x)*0.1;
+            const breeze = accel * 0.3; // softer breeze
+            f.rotation.y += (Math.sin(ud.hoverPhase)*breeze - f.rotation.y)*0.2;
+            f.rotation.z += (Math.cos(ud.hoverPhase)*breeze*0.5 - f.rotation.z)*0.2;
+            return;
+          }
+          if(magnetized===f && d>=ud.innerR) magnetized=null;
+          // reset tilts
+          f.rotation.y += (0 - f.rotation.y)*0.2;
+          f.rotation.z += (0 - f.rotation.z)*0.2;
+          // focused animation
+          if(ud.focused){
+            if(ud.phase==='move'){
+              const t = Math.min((now-ud.clickStart)/ud.duration,1);
+              f.position.lerpVectors(ud.startPos, ud.targetPos, ease(t));
+              if(t>=1){
+                ud.phase='stay';
+              }
+              return;
+            }
+          }
+          // hover open
+          if(hoverHits.find(h=>h.object===ud.front)) ud.front.rotation.x += (THREE.MathUtils.degToRad(15) - ud.front.rotation.x)*0.1;
+          else ud.front.rotation.x += (0 - ud.front.rotation.x)*0.1;
+          // orbit + repel
+          ud.curvePhase += 0.01;
+          const repel2 = new THREE.Vector3();
+          folders.forEach(o=>{
+            if(o!==f) {
+              const dv = f.position.clone().sub(o.position);
+              const sq = dv.lengthSq();
+              if(sq < 100) repel2.add(dv.normalize().multiplyScalar(0.08/sq));
+            }
+          });
+          const curveVec = new THREE.Vector3(
+            Math.sin(ud.curvePhase),
+            Math.sin(ud.curvePhase*0.9),
+            Math.cos(ud.curvePhase*0.8)
+          ).multiplyScalar(ud.curveScale);
+          const cf = new THREE.Vector3();
+          const magR = 5;
+          if(d<magR && d>ud.innerR) cf.add(to.normalize().multiplyScalar((magR-d)/magR*0.02));
+          f.position.add(
+            ud.dir.clone().multiplyScalar(ud.speed)
+              .add(curveVec)
+              .add(repel2)
+              .add(cf)
+          );
+          ['x','y'].forEach(a=>{ if(f.position[a]>5||f.position[a]<-5) ud.dir[a]*=-1; });
+          f.position.z = Math.max(-0.4, Math.min(0.4, f.position.z));
+        });
+      }
+      // camera & light
+      dirLight.position.x += (targetMouse.x*10 - dirLight.position.x)*0.1;
+      dirLight.position.y += (targetMouse.y*10 - dirLight.position.y)*0.1;
+      const a2 = Math.hypot(targetMouse.x-currentMouse.x, targetMouse.y-currentMouse.y);
+      currentMouse.x += (targetMouse.x-currentMouse.x)*0.02*a2;
+      currentMouse.y += (targetMouse.y-currentMouse.y)*0.02*a2;
+      camera.position.set(currentMouse.x*3,currentMouse.y*3,16);
+      camera.lookAt(0,0,0);
+      updateLabels();
+      // render
+      bgRenderer.render(scene,camera);
+      const active = folders.find(f=>f.userData.focused);
+      folders.forEach(f=>f.visible = !active || f===active);
+      fgRenderer.render(scene,camera);
+      folders.forEach(f=>f.visible=true);
+    }
+    animate();
+
+  </script>
+</body>
+</html>
