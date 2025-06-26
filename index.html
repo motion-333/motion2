@@ -6,6 +6,11 @@
   <title>3D Folder Orbit</title>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet">
   <style>
+    @font-face {
+      font-family: 'Ferrite';
+      src: url('/static/FERRITEDISPLAYVF.ttf') format('truetype');
+      font-weight: 100 900;
+    }
     html, body { margin:0; padding:0; width:100%; height:100%; background:#fff; overflow:hidden; cursor:default; }
     /* Top bar removed */
     /* Glass overlay */
@@ -26,15 +31,27 @@
       width:100%;
       height:100%;
       font-family:monospace;
-      font-size:12px;
-      line-height:12px;
+      font-size:16px;
+      line-height:16px;
       color:#ddd;
       white-space:pre;
       pointer-events:none;
       z-index:1;
     }
     /* Grid overlay */
-    #overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:2; pointer-events:none; }
+    #overlay {
+      position:fixed;
+      inset:0;
+      display:none;
+      opacity:0;
+      transition:opacity 0.5s ease;
+      align-items:center;
+      justify-content:center;
+      z-index:2;
+      pointer-events:none;
+    }
+    #overlay.show { display:flex; }
+    #overlay.visible { opacity:1; }
     #layoutWrapper { display:flex; flex-direction:column; align-items:center; pointer-events:auto; }
     #header { width:calc(120vmin + 6px); display:flex; height:15vmin; margin-bottom:-3px; }
     #viewport { position:relative; overflow:hidden; width:120vmin; height:calc(120vmin*9/16); border:3px solid #1449ff; }
@@ -45,7 +62,7 @@
       width:100%;
       white-space:nowrap;
       overflow:visible;
-      font-family:'Roboto Flex', sans-serif;
+      font-family:'Ferrite', sans-serif;
       font-size:12vmin;
       color:#1449ff;
     }
@@ -65,7 +82,20 @@
     .cell { background:none; border:1px solid #1449ff; aspect-ratio:1/1; }
     .placed { position:absolute; overflow:hidden; border:2px solid #1449ff; box-sizing:border-box; }
     .placed img, .placed video { width:100%; height:100%; object-fit:cover; pointer-events:none; }
-    .text-item { width:100%; height:100%; display:block; font-family:'Outfit', sans-serif; background:#fff; margin:0; padding:0; white-space:pre-wrap; box-sizing:border-box; outline:none; font-variation-settings:'wght' 400; color:#1449ff; }
+    .text-item {
+      width:100%;
+      height:100%;
+      display:block;
+      font-family:'Ferrite', sans-serif;
+      background:#fff;
+      margin:0;
+      padding:0;
+      white-space:pre-wrap;
+      box-sizing:border-box;
+      outline:none;
+      font-variation-settings:'wght' 400;
+      color:#1449ff;
+    }
   </style>
 </head>
 <body>
@@ -95,8 +125,8 @@
     const asciiChars = " .:-=+*#%@";
     window.asciiHover = '';
     function updateAscii(){
-      const cols = Math.floor(window.innerWidth/10);
-      const rows = Math.floor(window.innerHeight/12);
+      const cols = Math.floor(window.innerWidth/9);
+      const rows = Math.floor(window.innerHeight/16);
       let out='';
       for(let r=0;r<rows;r++){
         for(let c=0;c<cols;c++){
@@ -323,8 +353,18 @@
         });
       });
     }
-    function showGrid(name){ currentFolder=name; overlay.style.display='flex'; setupInteractiveText(name); loadLayout(name); }
-    function hideGrid(){ overlay.style.display='none'; }
+    function showGrid(name){
+      currentFolder = name;
+      overlay.classList.add('show');
+      overlay.classList.remove('visible');
+      setupInteractiveText(name);
+      loadLayout(name);
+      setTimeout(() => overlay.classList.add('visible'), 500);
+    }
+    function hideGrid(){
+      overlay.classList.remove('visible');
+      overlay.addEventListener('transitionend', () => overlay.classList.remove('show'), { once: true });
+    }
 
     // click behavior
     window.addEventListener('click', ()=>{
