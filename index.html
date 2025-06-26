@@ -38,6 +38,7 @@
       white-space:pre;
       pointer-events:none;
       z-index:1;
+      transition:color 1s;
     }
     #ascii.front {
       color:#1449ff;
@@ -70,6 +71,7 @@
       font-family:'Ferrite', sans-serif;
       font-size:12vmin;
       color:#1449ff;
+      transform: translateY(4%);
     }
     #rightBox .interactive-text .letter {
       display:inline-block;
@@ -363,6 +365,7 @@
      overlay.classList.add('show');
      overlay.classList.remove('visible');
       ascii.classList.add('front');
+      window.asciiHover = name;
       labelsContainer.classList.add('hidden');
       setupInteractiveText(name);
       loadLayout(name);
@@ -372,6 +375,7 @@
      overlay.classList.remove('visible');
      overlay.addEventListener('transitionend', () => overlay.classList.remove('show'), { once: true });
       ascii.classList.remove('front');
+      window.asciiHover = '';
       labelsContainer.classList.remove('hidden');
    }
 
@@ -387,7 +391,7 @@
         ud.clickStart = performance.now();
         ud.startPos.copy(f.position);
         ud.startScale.copy(f.scale);
-        ud.targetPos.set(-6,3.2,8);
+        ud.targetPos.set(-5.6,3.2,8);
         ud.targetScale.set(0.6,0.6,0.6);
         glass.classList.add('visible');
         showGrid(ud.name);
@@ -434,7 +438,11 @@
       else {
         raycaster.setFromCamera(mouse, camera);
         const hoverHits = raycaster.intersectObjects(folders.map(f=>f.userData.front));
-        window.asciiHover = hoverHits.length ? hoverHits[0].object.parent.userData.name : '';
+        if(activeFolder){
+          window.asciiHover = activeFolder.userData.name;
+        } else {
+          window.asciiHover = hoverHits.length ? hoverHits[0].object.parent.userData.name : '';
+        }
         const accel = Math.hypot(targetMouse.x-currentMouse.x, targetMouse.y-currentMouse.y);
         if(magnetized && accel>2) magnetized = null;
         folders.forEach((f,idx)=>{
