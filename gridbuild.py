@@ -51,3 +51,14 @@ for folder in folders:
     with open(manifest_path, 'w') as mf:
         json.dump(files, mf, indent=2)
     print(f"Wrote {manifest_path} with {len(files)} media files.")
+
+# Generate index.html from template if present
+TEMPLATE = 'index_template.html'
+OUTPUT = 'index.html'
+if os.path.exists(TEMPLATE):
+    with open(TEMPLATE, 'r') as tf:
+        template = tf.read()
+    filled = template.replace('{{FOLDERS}}', json.dumps(folders))
+    with open(OUTPUT, 'w') as out:
+        out.write(filled)
+    print(f"Wrote {OUTPUT} with {len(folders)} folders.")
