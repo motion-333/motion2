@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>3D Folder Orbit</title>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet">
   <style>
     @font-face {
       font-family: 'Ferrite';
@@ -21,7 +20,7 @@
     #bgCanvas { z-index:0; }
     #fgCanvas { z-index:3; pointer-events:none; }
     /* Labels */
-    #labels { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:4; font-family:'Outfit',sans-serif; opacity:1; transition:opacity 0.5s; }
+    #labels { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:4; font-family:'Ferrite',sans-serif; opacity:1; transition:opacity 0.5s; }
     #labels.hidden { opacity:0; }
     .label { position:absolute; transform:translate(-50%,0); color:#1449ff; font-size:14px; text-shadow:0 0 4px #fff; }
     /* ASCII background */
@@ -101,6 +100,7 @@
       font-variation-settings:'wght' 400;
     }
     #gridContainer { position:absolute; top:50%; left:50%; width:100vw; height:100vh; transform:translate(-50%,-50%); background:#fff; }
+    #gridContainer::after { content:""; position:absolute; left:0; right:0; bottom:-var(--extra-bg,0); height:var(--extra-bg,0); background:#fff; pointer-events:none; }
     #grid { display:grid; grid-template-columns:repeat(80,1fr); grid-template-rows:repeat(45,1fr); gap:1px; width:100%; height:100%; }
     .cell { background:none; border:1px solid #1449ff; aspect-ratio:1/1; }
     .placed { position:absolute; overflow:hidden; border:2px solid #1449ff; box-sizing:border-box; }
@@ -147,7 +147,10 @@
   <script>
     const ascii = document.getElementById('ascii');
     const asciiChars = " .:-=+*#%@";
-    function updateAscii(){
+    let lastAscii = 0;
+    function updateAscii(now){
+      if(now - lastAscii < 500) return;
+      lastAscii = now;
       const cols = Math.floor(window.innerWidth/9);
       const rows = Math.floor(window.innerHeight/16);
       const grid = Array.from({length:rows},()=>Array(cols).fill(' '));
@@ -166,11 +169,14 @@
           radius *= 1.2 + 0.2*Math.sin(performance.now()/500);
           chars = ['$','€','£','%'];
         }
-        for(let a=0;a<Math.PI*2;a+=Math.PI/10){
-          const x = Math.round(cx + radius*Math.cos(a));
-          const y = Math.round(cy + radius*Math.sin(a));
-          if(x>=0 && x<cols && y>=0 && y<rows){
-            grid[y][x] = chars[Math.floor(Math.random()*chars.length)];
+        for(let ring=-1; ring<=1; ring++){
+          const r = radius + ring*0.7;
+          for(let a=0;a<Math.PI*2;a+=Math.PI/20){
+            const x = Math.round(cx + r*Math.cos(a));
+            const y = Math.round(cy + r*Math.sin(a));
+            if(x>=0 && x<cols && y>=0 && y<rows){
+              grid[y][x] = chars[Math.floor(Math.random()*chars.length)];
+            }
           }
         }
       });
@@ -289,6 +295,7 @@
     function applyTransform(){
       const {step} = getSizes();
       gridContainer.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY - step*2}px))`;
+      gridContainer.style.setProperty('--extra-bg', (step*4)+'px');
     }
     function render(){ const {size,step}=getSizes(); gridContainer.querySelectorAll('.placed').forEach(el=>el.remove()); items.forEach((item,i)=>{
         const col=Math.min(Math.max(0,item.col),cols-item.cols); const row=Math.min(Math.max(0,item.row),rows-item.rows);
@@ -415,7 +422,7 @@
         ud.clickStart = performance.now();
         ud.startPos.copy(f.position);
         ud.startScale.copy(f.scale);
-        ud.targetPos.set(-5.6,3.6,8);
+        ud.targetPos.set(-5.7,3.5,8);
         ud.targetScale.set(0.6,0.6,0.6);
         glass.classList.add('visible');
         showGrid(ud.name);
@@ -552,9 +559,9 @@
         lbl.style.left = `${x}px`;
         lbl.style.top = `${y + 20}px`;
       });
-      updateAscii();
+      updateAscii(now);
     }
-    updateAscii();
+    updateAscii(performance.now());
     animate();
   </script>
 </body>
