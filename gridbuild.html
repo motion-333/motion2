@@ -44,6 +44,7 @@
     const gridContainer=document.getElementById('gridContainer'), grid=document.getElementById('grid');
     const folderSelect=document.getElementById('folderSelect'), fileList=document.getElementById('fileList'), addTextBtn=document.getElementById('addTextBtn');
 
+    // Build grid
     for(let i=0;i<cols*rows;i++){const c=document.createElement('div');c.className='cell';grid.appendChild(c);}    
 
     function gcd(a,b){return b?gcd(b,a%b):a;}
@@ -53,10 +54,12 @@
       return { size, step:size+gap };
     }
 
+    // Load folders
     fetch('/static/pf/folders.json')
       .then(r=>r.json()).then(fs=>{folderSelect.innerHTML='<option disabled selected>Select folder</option>'+fs.map(f=>`<option value="${f}">${f}</option>`).join('');})
       .catch(_=>folderSelect.innerHTML='<option disabled>Error</option>');
 
+    // On folder change
     folderSelect.addEventListener('change',()=>{
       const folder=folderSelect.value;fileList.innerHTML='';
       fetch(`/static/pf/${folder}/files.json`).then(r=>{if(!r.ok)throw'';return r.json();}).then(files=>{
@@ -72,6 +75,7 @@
             if(el.dataset.cols && el.dataset.rows) return;
             const w=el.videoWidth||el.naturalWidth,
                   h=el.videoHeight||el.naturalHeight;
+            // approximate cell spans based on ~100px per cell
             const cw=Math.max(1,Math.round(w/100));
             const ch=Math.max(1,Math.round(h/100));
             const d=gcd(cw,ch);
@@ -80,22 +84,17 @@
             el.dataset.cols=rw*scale;
             el.dataset.rows=rh*scale;
           });
-            el.addEventListener("dragstart", e => {
-              if(!el.dataset.cols || !el.dataset.rows){
-                const w = el.videoWidth || el.naturalWidth;
-                const h = el.videoHeight || el.naturalHeight;
-                const cw = Math.max(1, Math.round(w/100));
-                const ch = Math.max(1, Math.round(h/100));
-                const d = gcd(cw, ch);
-                const rw = cw/d, rh = ch/d;
-                const scale = Math.max(1, Math.ceil(minCells/Math.max(rw, rh)));
-                el.dataset.cols = rw*scale;
-                el.dataset.rows = rh*scale;
-              }
-              const payload = JSON.stringify({src: el.dataset.src, type: el.dataset.type, cols: el.dataset.cols, rows: el.dataset.rows});
-              e.dataTransfer.setData("application/json", payload);
-              e.dataTransfer.setData("text/plain", payload);
+          el.addEventListener('dragstart',e=>{
+            const payload=JSON.stringify({
+              src:el.dataset.src,
+              type:el.dataset.type,
+              cols:el.dataset.cols,
+              rows:el.dataset.rows
             });
+            // provide both custom and plain text types for compatibility
+            e.dataTransfer.setData('application/json',payload);
+            e.dataTransfer.setData('text/plain',payload);
+          });
           fileList.appendChild(el);
         });loadLayout(folder);
       }).catch(_=>fileList.innerHTML='<div class="error">Error loading files.json</div>');
@@ -133,7 +132,7 @@
       let info = {};
       try{ info = JSON.parse(data); }catch{}
       let src = info.src || e.dataTransfer.getData('text/plain');
-      let type = info.type || (/\.(mp4|webm)$/i.test(src) ? 'video' : 'image');
+      let type = info.type || (/(.mp4|.webm)$/i.test(src) ? 'video' : 'image');
       let colsSpan = parseInt(info.cols,10);
       let rowsSpan = parseInt(info.rows,10);
       if(!(colsSpan>0&&rowsSpan>0)){
@@ -212,6 +211,7 @@
         });
       }
       wrap.appendChild(media);
+      // ensure on top when created
       const maxZ=[...document.querySelectorAll('.placed')]
         .reduce((m,el)=>Math.max(m,parseInt(el.style.zIndex)||0),0);
       wrap.style.zIndex=maxZ+1;
