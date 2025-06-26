@@ -18,6 +18,21 @@
     /* Labels */
     #labels { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:4; font-family:'Outfit',sans-serif; }
     .label { position:absolute; transform:translate(-50%,0); color:#1449ff; font-size:14px; text-shadow:0 0 4px #fff; }
+    /* ASCII background */
+    #ascii {
+      position:fixed;
+      top:0;
+      left:0;
+      width:100%;
+      height:100%;
+      font-family:monospace;
+      font-size:12px;
+      line-height:12px;
+      color:#ddd;
+      white-space:pre;
+      pointer-events:none;
+      z-index:0;
+    }
     /* Grid overlay */
     #overlay { position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:2; pointer-events:none; }
     #layoutWrapper { display:flex; flex-direction:column; align-items:center; pointer-events:auto; }
@@ -55,6 +70,7 @@
 </head>
 <body>
   <!-- top bar removed -->
+  <pre id="ascii"></pre>
   <div class="glass" id="glass"></div>
   <canvas id="bgCanvas"></canvas>
   <canvas id="fgCanvas"></canvas>
@@ -73,6 +89,30 @@
   <script src="https://unpkg.com/three@0.148.0/build/three.min.js"></script>
   <script>
     const FOLDER_NAMES = ["example1", "example2"];
+  </script>
+  <script>
+    const ascii = document.getElementById('ascii');
+    const asciiChars = " .:-=+*#%@";
+    window.asciiHover = '';
+    function updateAscii(){
+      const cols = Math.floor(window.innerWidth/10);
+      const rows = Math.floor(window.innerHeight/12);
+      let out='';
+      for(let r=0;r<rows;r++){
+        for(let c=0;c<cols;c++){
+          if(window.asciiHover && Math.random()<0.02){
+            out += window.asciiHover;
+            c += window.asciiHover.length-1;
+          } else {
+            out += asciiChars[Math.floor(Math.random()*asciiChars.length)];
+          }
+        }
+        out += '\n';
+      }
+      ascii.textContent = out;
+    }
+    updateAscii();
+    setInterval(updateAscii,150);
   </script>
   <script>
     // Renderer & scene setup
@@ -184,7 +224,7 @@
     let currentFolder=null, key='', items=[]; let offsetX=0, offsetY=0; let lastLayout=null;
     function applyTransform(){
       const {step} = getSizes();
-      gridContainer.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY + step*2}px))`;
+      gridContainer.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY - step*2}px))`;
     }
     function render(){ const {size,step}=getSizes(); gridContainer.querySelectorAll('.placed').forEach(el=>el.remove()); items.forEach((item,i)=>{
         const col=Math.min(Math.max(0,item.col),cols-item.cols); const row=Math.min(Math.max(0,item.row),rows-item.rows);
@@ -193,8 +233,29 @@
         let media; if(item.type==='text'){ media=document.createElement('div'); media.className='text-item'; media.textContent=item.text||''; const upd=s=>{const {size:sz}=getSizes(); media.style.fontSize=`${sz*s}px`; media.style.lineHeight=`${sz*s}px`;}; wrap.dataset.fontScale=item.fontScale||1; upd(parseFloat(wrap.dataset.fontScale)); } else { const tag=/(mp4|webm)$/i.test(item.src)?'video':'img'; media=document.createElement(tag); if(media.tagName==='VIDEO'){ media.controls=false; media.autoplay=true; media.loop=true; media.muted=true; media.playsInline=true; } media.src=item.src; }
         wrap.appendChild(media); gridContainer.appendChild(wrap); }); }
     function loadLayout(name){ key=`layout_${name}`; const raw=localStorage.getItem(key); items=raw?JSON.parse(raw):[]; lastLayout=raw; render(); }
-    viewport.addEventListener('mousemove',e=>{ const rect=viewport.getBoundingClientRect(); const {size,step}=getSizes(); const gridW=cols*size+(cols-1)*gap; const gridH=rows*size+(rows-1)*gap; const maxX=Math.max(0,(gridW-rect.width)/2); const maxY=Math.max(0,(gridH-rect.height)/2); const margin=60,pan=step/4; let moved=false; if(e.clientX-rect.left<margin){offsetX=Math.min(offsetX+pan,maxX);moved=true;} else if(rect.right-e.clientX<margin){offsetX=Math.max(offsetX-pan,-maxX);moved=true;} if(e.clientY-rect.top<margin){offsetY=Math.min(offsetY+pan,maxY);moved=true;} else if(rect.bottom-e.clientY<margin){offsetY=Math.max(offsetY-pan,-maxY);moved=true;} if(moved)applyTransform(); });
-    applyTransform();
+    let panDirX=0, panDirY=0, panVX=0, panVY=0;
+    const margin=120;
+    viewport.addEventListener('mousemove',e=>{
+      const rect=viewport.getBoundingClientRect();
+      panDirX = (e.clientX-rect.left<margin) ? 1 : (rect.right-e.clientX<margin? -1:0);
+      panDirY = (e.clientY-rect.top<margin) ? 1 : (rect.bottom-e.clientY<margin? -1:0);
+    });
+    function panStep(){
+      const {size,step}=getSizes();
+      const gridW=cols*size+(cols-1)*gap;
+      const gridH=rows*size+(rows-1)*gap;
+      const maxX=Math.max(0,(gridW-viewport.clientWidth)/2);
+      const maxY=Math.max(0,(gridH-viewport.clientHeight)/2);
+      const accel=step/10;
+      panVX += panDirX*accel;
+      panVY += panDirY*accel;
+      panVX *= 0.85; panVY *= 0.85;
+      offsetX = Math.max(-maxX, Math.min(maxX, offsetX + panVX));
+      offsetY = Math.max(-maxY, Math.min(maxY, offsetY + panVY));
+      applyTransform();
+      requestAnimationFrame(panStep);
+    }
+    panStep();
     window.addEventListener('storage',e=>{ if(e.key===key){ items=e.newValue?JSON.parse(e.newValue):[]; render(); }});
     setInterval(()=>{ const cur=localStorage.getItem(key); if(cur!==lastLayout){ lastLayout=cur; items=cur?JSON.parse(cur):[]; render(); } },1000);
     function setupInteractiveText(text){
@@ -296,6 +357,11 @@
     function animate(){
       requestAnimationFrame(animate);
       const now = performance.now(), dt = now - startTime;
+      const activeFolder = folders.find(f=>f.userData.focused);
+      if(activeFolder){
+        targetMouse.x = 0;
+        targetMouse.y = 0;
+      }
       // intro
       if(dt < introDur) {
         const a = (dt/introDur)*Math.PI*2;
@@ -318,6 +384,7 @@
       else {
         raycaster.setFromCamera(mouse, camera);
         const hoverHits = raycaster.intersectObjects(folders.map(f=>f.userData.front));
+        window.asciiHover = hoverHits.length ? hoverHits[0].object.parent.userData.name : '';
         const accel = Math.hypot(targetMouse.x-currentMouse.x, targetMouse.y-currentMouse.y);
         if(magnetized && accel>2) magnetized = null;
         folders.forEach((f,idx)=>{

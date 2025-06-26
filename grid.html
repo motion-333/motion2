@@ -172,34 +172,29 @@
 
     render();
 
+    let panDirX = 0, panDirY = 0, panVX = 0, panVY = 0;
+    const margin = 120;
     viewport.addEventListener('mousemove', e => {
       const rect = viewport.getBoundingClientRect();
+      panDirX = (e.clientX - rect.left < margin) ? 1 : (rect.right - e.clientX < margin ? -1 : 0);
+      panDirY = (e.clientY - rect.top < margin) ? 1 : (rect.bottom - e.clientY < margin ? -1 : 0);
+    });
+    function panStep(){
       const { size, step } = getSizes();
       const gridW = cols*size + (cols-1)*gap;
       const gridH = rows*size + (rows-1)*gap;
-      const maxX = Math.max(0, (gridW-rect.width)/2 - step);
-      const maxY = Math.max(0, (gridH-rect.height)/2 - step);
-      const margin = 60, pan = step/4;
-      let moved = false;
-
-      if(e.clientX - rect.left < margin) {
-        offsetX = Math.min(offsetX + pan, maxX);
-        moved = true;
-      } else if(rect.right - e.clientX < margin) {
-        offsetX = Math.max(offsetX - pan, -maxX);
-        moved = true;
-      }
-      if(e.clientY - rect.top < margin) {
-        offsetY = Math.min(offsetY + pan, maxY);
-        moved = true;
-      } else if(rect.bottom - e.clientY < margin) {
-        offsetY = Math.max(offsetY - pan, -maxY);
-        moved = true;
-      }
-      if(moved) applyTransform();
-    });
-
-    applyTransform();
+      const maxX = Math.max(0, (gridW-viewport.clientWidth)/2);
+      const maxY = Math.max(0, (gridH-viewport.clientHeight)/2);
+      const accel = step/10;
+      panVX += panDirX * accel;
+      panVY += panDirY * accel;
+      panVX *= 0.85; panVY *= 0.85;
+      offsetX = Math.max(-maxX, Math.min(maxX, offsetX + panVX));
+      offsetY = Math.max(-maxY, Math.min(maxY, offsetY + panVY));
+      applyTransform();
+      requestAnimationFrame(panStep);
+    }
+    panStep();
 
     window.addEventListener('storage', e => {
       if(e.key === key){
