@@ -323,7 +323,7 @@ const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
         curveScale:0.005 + Math.random()*0.003,
         focused:false, clickStart:0, startPos:new THREE.Vector3(), targetPos:new THREE.Vector3(), duration:1000,
         innerR:1.2, hoverPhase:0,
-        returning:false, returnStart:0, returnFrom:new THREE.Vector3(), returnTo:new THREE.Vector3(), returnDuration:1000,
+        phase:null,
         spin:false, spinElapsed:0, spinDuration:1,
         magnetStart:0,
         name:null,
@@ -365,16 +365,11 @@ const startTime=performance.now();
       const f = hit.object.parent, ud = f.userData;
       if(!ud.focused){
         ud.focused = true;
+        ud.phase = 'move';
         ud.clickStart = performance.now();
         ud.startPos.copy(f.position);
         ud.targetPos.set(0, 0, 8);
         glass.classList.add('visible');
-      }else{
-        ud.returning = true;
-        ud.returnStart = performance.now();
-        ud.returnFrom.copy(f.position);
-        ud.returnTo.copy(ud.startPos);
-        glass.classList.remove('visible');
       }
     });
 
@@ -452,22 +447,39 @@ const startTime=performance.now();
           // reset tilts
           f.rotation.y += (0 - f.rotation.y)*0.2;
           f.rotation.z += (0 - f.rotation.z)*0.2;
-          // returning
-          if(ud.returning) {
-            const t = Math.min((now-ud.returnStart)/ud.returnDuration,1);
-            f.position.lerpVectors(ud.returnFrom, ud.returnTo, ease(t));
-            if(t>=1) { ud.returning=false; ud.focused=false; }
-            return;
-          }
-          // focused
-          if(ud.focused) {
-            const t = Math.min((now-ud.clickStart)/ud.duration,1);
-            f.position.lerpVectors(ud.startPos, ud.targetPos, ease(t));
-            f.rotation.x = 0;
-            f.rotation.y = 0;
-            f.rotation.z = 0;
-            if(t>=1) f.position.copy(ud.targetPos);
-            return;
+          // focused animation phases
+          if(ud.focused){
+            if(ud.phase==='move'){
+              const t = Math.min((now-ud.clickStart)/ud.duration,1);
+              f.position.lerpVectors(ud.startPos, ud.targetPos, ease(t));
+              if(t>=1){
+                ud.phase='open';
+                ud.openStart = now;
+              }
+              return;
+            }
+            if(ud.phase==='open'){
+              const t = Math.min((now-ud.openStart)/600,1);
+              ud.front.rotation.x = -Math.PI/2 * t;
+              if(t>=1){
+                ud.phase='fade';
+                ud.fadeStart=now;
+              }
+              return;
+            }
+            if(ud.phase==='fade'){
+              const t = Math.min((now-ud.fadeStart)/500,1);
+              f.traverse(o=>{
+                if(o.material&&'opacity' in o.material){
+                  o.material.transparent=true;
+                  o.material.opacity=1-t;
+                }
+              });
+              if(t>=1){
+                window.location.href = `grid.html?folder=${encodeURIComponent(ud.name)}`;
+              }
+              return;
+            }
           }
           // hover open
           if(hoverHits.find(h=>h.object===ud.front)) ud.front.rotation.x += (THREE.MathUtils.degToRad(15) - ud.front.rotation.x)*0.1;

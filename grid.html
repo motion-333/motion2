@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agora Grid Layout with Interactive Text</title>
+  <style>
+    /* Import fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,100..1000&display=swap');
+
+    /* Base layout */
+    body {
+      margin: 0;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      font-family: sans-serif;
+      justify-content: center;
+      align-items: center;
+      background: #fafafa;
+    }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255,255,255,0.9);
+      padding: 8px;
+      border-radius: 4px;
+      z-index: 10;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    #message { margin: 0; }
+    #layoutWrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Header & interactive text */
+    #header {
+      width: calc(80vmin + 6px);
+      display: flex;
+      height: 10vmin;
+      margin-bottom: -3px;
+    }
+    #leftSquare {
+      width: 10vmin;
+      height: 100%;
+      background: #eee;
+      box-sizing: border-box;
+      border: 3px solid #1449ff;
+      border-right: none;
+    }
+    #rightBox {
+      flex: 1;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+      border: 3px solid #1449ff;
+      border-left: 3px solid #1449ff;
+    }
+    /* Interactive text styling */
+    #rightBox .interactive-text {
+      width: 100%;
+      white-space: nowrap;
+      overflow: visible;
+      font-family: 'Roboto Flex', sans-serif;
+      font-size: 8vmin;
+    }
+    #rightBox .interactive-text .letter {
+      display: inline-block;
+      overflow: hidden;
+      transition: width 0.2s ease;
+    }
+    #rightBox .interactive-text .letter .char {
+      display: inline-block;
+      transform-origin: left center;
+      transition: transform 0.2s ease, font-variation-settings 0.2s ease;
+      font-variation-settings: 'wght' 400;
+    }
+
+    /* Grid & viewport */
+    #viewport {
+      position: relative;
+      overflow: hidden;
+      width: 80vmin;
+      height: calc(80vmin * 9 / 16);
+      border: 3px solid #1449ff;
+    }
+    #gridContainer {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100vw;
+      height: 100vh;
+      transform: translate(-50%, -50%);
+      background: #fff;
+    }
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(80, 1fr);
+      grid-template-rows: repeat(45, 1fr);
+      gap: 1px;
+      width: 100%;
+      height: 100%;
+    }
+    .cell {
+      background: none;
+      border: 1px solid #1449ff;
+      aspect-ratio: 1 / 1;
+    }
+    .placed {
+      position: absolute;
+      overflow: hidden;
+    }
+    .placed img,
+    .placed video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+    .text-item {
+      width: 100%;
+      height: 100%;
+      display: block;
+      font-family: 'Outfit', sans-serif;
+      background: #fff;
+      white-space: pre-wrap;
+      box-sizing: border-box;
+      outline: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <div id="message"></div>
+    <select id="folderSelect"></select>
+  </div>
+
+  <div id="layoutWrapper">
+    <div id="header">
+      <div id="leftSquare"></div>
+      <div id="rightBox">
+        <div class="interactive-text"></div>
+      </div>
+    </div>
+    <div id="viewport">
+      <div id="gridContainer">
+        <div id="grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Interactive-text setup
+    function setupInteractiveText(text) {
+      const C = document.querySelector('#rightBox .interactive-text');
+      if (!C) return;
+      C.textContent = text || '';
+      const hoverScale = 1.8;
+      const neighborScale = 1.2;
+      const normalWght = 400;
+      const neighborWght = 600;
+      const hoverWght = 900;
+
+      const txt = C.textContent.trim();
+      C.textContent = '';
+
+      for (const ch of txt) {
+        const out = document.createElement('span');
+        out.className = 'letter';
+        const inn = document.createElement('span');
+        inn.className = 'char';
+        inn.textContent = ch;
+        out.appendChild(inn);
+        C.appendChild(out);
+      }
+
+      const letters = Array.from(C.children);
+      const n = letters.length;
+      let base = [], scaled = [], sum = 0, total = 0;
+
+      requestAnimationFrame(() => {
+        letters.forEach(o => {
+          const inn = o.firstElementChild;
+          inn.style.transform = 'scaleX(1)';
+          const w = inn.getBoundingClientRect().width;
+          base.push(w);
+          sum += w;
+        });
+
+        total = C.getBoundingClientRect().width;
+        const S = total / sum;
+        scaled = base.map(w => w * S);
+
+        letters.forEach((o, i) => {
+          const inn = o.firstElementChild;
+          o.style.width = `${scaled[i]}px`;
+          inn.style.width = `${base[i]}px`;
+          inn.style.transform = `scaleX(${S})`;
+          inn.style.fontVariationSettings = `'wght' ${normalWght}`;
+        });
+
+        letters.forEach((o, i) => {
+          o.onmouseenter = () => {
+            const wH = scaled[i];
+            const wN = (i>0?scaled[i-1]:0) + (i<n-1?scaled[i+1]:0);
+            const wO = total - wH - wN;
+            const Rh = hoverScale, Rn = neighborScale;
+            const Ro = (total - wH*Rh - wN*Rn) / wO;
+
+            letters.forEach((oo, j) => {
+              const ch = oo.firstElementChild;
+              let R, wght;
+              if (j === i)       { R = Rh; wght = hoverWght; }
+              else if (j === i-1 || j === i+1) { R = Rn; wght = neighborWght; }
+              else               { R = Ro; wght = normalWght; }
+              oo.style.width = `${scaled[j] * R}px`;
+              ch.style.transform = `scaleX(${S * R})`;
+              ch.style.fontVariationSettings = `'wght' ${wght}`;
+            });
+          };
+          o.onmouseleave = () => {
+            letters.forEach((oo, j) => {
+              const ch = oo.firstElementChild;
+              oo.style.width = `${scaled[j]}px`;
+              ch.style.transform = `scaleX(${S})`;
+              ch.style.fontVariationSettings = `'wght' ${normalWght}`;
+            });
+          };
+        });
+      });
+    }
+
+    // Main grid & controls logic
+    (async function(){
+      const cols=80, rows=45, gap=1;
+      const gridContainer=document.getElementById('gridContainer');
+      const grid=document.getElementById('grid');
+      const message=document.getElementById('message');
+      const folderSelect=document.getElementById('folderSelect');
+
+      for(let i=0;i<cols*rows;i++){
+        const c=document.createElement('div');
+        c.className='cell';
+        grid.appendChild(c);
+      }
+
+      function getSizes() {
+        const cell = grid.querySelector('.cell');
+        const rect = cell.getBoundingClientRect();
+        return { size: rect.width, step: rect.width + gap };
+      }
+
+      let folders = [];
+      try {
+        folders = await (await fetch('/static/pf/folders.json')).json();
+        folderSelect.innerHTML = folders
+          .map(f => `<option value="${f}">${f}</option>`)
+          .join('');
+      } catch(e) {
+        message.textContent = 'No folders available';
+        return;
+      }
+
+      let folder = new URLSearchParams(location.search).get('folder') || folders[0];
+      folderSelect.value = folder;
+      setupInteractiveText(folder);
+
+      let key   = `layout_${folder}`,
+          raw   = localStorage.getItem(key),
+          items = raw ? JSON.parse(raw) : [];
+      message.textContent = `Folder: ${folder}`;
+
+      const viewport = document.getElementById('viewport');
+      let offsetX = 0, offsetY = 0;
+      function applyTransform() {
+        gridContainer.style.transform =
+          `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
+      }
+
+      function render() {
+        const { size, step } = getSizes();
+        gridContainer.querySelectorAll('.placed').forEach(el => el.remove());
+        items.forEach((item, i) => {
+          const { cols: cw, rows: rh, col, row, type, text, src, fontScale } = item;
+          const cspan = cw, rspan = rh;
+          const cc = Math.min(Math.max(0, col), cols - cspan);
+          const rr = Math.min(Math.max(0, row), rows - rspan);
+          const w = cspan * size + (cspan - 1) * gap;
+          const h = rspan * size + (rspan - 1) * gap;
+          const wrap = document.createElement('div');
+          wrap.className = 'placed';
+          wrap.style.zIndex = i + 1;
+          wrap.style.left  = `${cc*step}px`;
+          wrap.style.top   = `${rr*step}px`;
+          wrap.style.width = `${w}px`;
+          wrap.style.height= `${h}px`;
+
+          let media;
+          if(type === 'text'){
+            media = document.createElement('div');
+            media.className = 'text-item';
+            media.textContent = text || '';
+            wrap.dataset.fontScale = fontScale || 1;
+            const updateScale = scale => {
+              const { size: sz } = getSizes();
+              media.style.fontSize   = `${sz * scale}px`;
+              media.style.lineHeight = `${sz * scale}px`;
+            };
+            updateScale(parseFloat(wrap.dataset.fontScale));
+            wrap.addEventListener('dblclick', () => {
+              const scale = parseFloat(wrap.dataset.fontScale) || 1;
+              const newScale = scale * 2;
+              wrap.dataset.fontScale = newScale;
+              items[i].fontScale = newScale;
+              updateScale(newScale);
+              localStorage.setItem(key, JSON.stringify(items));
+            });
+          } else {
+            const tag = /(\.mp4|\.webm)$/i.test(src) ? 'video' : 'img';
+            media = document.createElement(tag);
+            if(media.tagName === 'VIDEO'){
+              media.controls = false;
+              media.autoplay = true;
+              media.loop    = true;
+              media.muted   = true;
+              media.playsInline = true;
+            }
+            media.src = src;
+          }
+          wrap.appendChild(media);
+          gridContainer.appendChild(wrap);
+        });
+      }
+
+      function loadLayout(name){
+        key = `layout_${name}`;
+        raw = localStorage.getItem(key);
+        items = raw ? JSON.parse(raw) : [];
+        message.textContent = raw ? `Folder: ${name}` : `No layout for '${name}'`;
+        render();
+      }
+      folderSelect.addEventListener('change', () => {
+        folder = folderSelect.value;
+        history.replaceState(null, '', `?folder=${encodeURIComponent(folder)}`);
+        setupInteractiveText(folder);
+        loadLayout(folder);
+      });
+
+      render();
+      applyTransform();
+      viewport.addEventListener('mousemove', e => {
+        const rect = viewport.getBoundingClientRect();
+        const { size, step } = getSizes();
+        const gridW = cols * size + (cols - 1) * gap;
+        const gridH = rows * size + (rows - 1) * gap;
+        const maxX = Math.max(0, (gridW - rect.width)/2 - step);
+        const maxY = Math.max(0, (gridH - rect.height)/2 - step);
+        const margin = 60, pan = step/4;
+        let moved = false;
+        if (e.clientX - rect.left < margin) {
+          offsetX = Math.min(offsetX + pan, maxX); moved = true;
+        } else if (rect.right - e.clientX < margin) {
+          offsetX = Math.max(offsetX - pan, -maxX); moved = true;
+        }
+        if (e.clientY - rect.top < margin) {
+          offsetY = Math.min(offsetY + pan, maxY); moved = true;
+        } else if (rect.bottom - e.clientY < margin) {
+          offsetY = Math.max(offsetY - pan, -maxY); moved = true;
+        }
+        if (moved) applyTransform();
+      });
+
+      window.addEventListener('storage', e => {
+        if (e.key === key) {
+          items = e.newValue ? JSON.parse(e.newValue) : [];
+          render();
+        }
+      });
+      let lastLayout = raw;
+      setInterval(() => {
+        const cur = localStorage.getItem(key);
+        if (cur !== lastLayout) {
+          lastLayout = cur;
+          items = cur ? JSON.parse(cur) : [];
+          render();
+        }
+      }, 1000);
+    })();
+  </script>
+</body>
+</html>

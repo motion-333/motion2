@@ -1,26 +1,23 @@
 # motion2
 
-This repository provides utilities for working with the `static/pf` folder.
+This repository manages a gallery of folders under `static/pf`.
 
-- `link_model_folders.py` provides `associate_models()` which simply lists all
-  directories inside `static/pf`.
-- `generate_index_html.py` reads those directories and creates `index.html`
-  listing them. The page renders each folder as a 3D icon with
-  its name displayed just below in the "Outfit" font. Labels drift with their
-  folders and thicken and widen when hovered. Clicking a folder simply moves it
-  toward the camera while a glassy blur covers the background.
+- `link_model_folders.py` returns the list of directories inside `static/pf`.
+- `generate_index_html.py` reads those folders and writes `index.html` which
+  renders them as 3D icons with hoverable labels.
+- `gridbuild.py` scans the same directory and creates `folders.json` and a
+  `files.json` manifest for each folder. These are used by `grid.html` and
+  `gridbuild.html`.
 
-- `manage_layout.py` is retained for older layouts but is not used by the
-  current page.
-
+`grid.html` displays a scrolling grid for a single folder, while
+`gridbuild.html` lets you arrange media items on that grid using drag and
+drop. Layout information is stored in `localStorage` and shared with
+`grid.html`.
 
 ## Usage
 
-Add or remove folders inside `static/pf/` manually and run:
-
-```bash
-python generate_index_html.py
-```
-
-Open `index.html` in your browser to see the list.
-
+1. Add or remove folders inside `static/pf/`.
+2. Run `python gridbuild.py` to refresh the manifests.
+3. Run `python generate_index_html.py` to rebuild `index.html`.
+4. Open `index.html` in your browser. Clicking a folder flies it toward the
+   camera, opens, fades out, and then loads `grid.html?folder=NAME`.
