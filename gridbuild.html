@@ -26,6 +26,8 @@
       white-space:pre-wrap;
       box-sizing:border-box;
       outline:none;
+      border:2px solid #1449ff;
+      font-variation-settings:'wght' 400;
     }
     #addTextBtn { width:100%; margin-top:10px; }
   </style>
@@ -48,9 +50,9 @@
 
     function gcd(a,b){return b?gcd(b,a%b):a;}
     function getSizes(){
-      const r=gridContainer.getBoundingClientRect();
-      const size=(r.width-(cols-1)*gap)/cols;
-      return { size, step:size+gap };
+      const cell = grid.querySelector('.cell');
+      const rect = cell.getBoundingClientRect();
+      return { size: rect.width, step: rect.width + gap };
     }
 
     fetch('/static/pf/folders.json')
