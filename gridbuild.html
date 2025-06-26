@@ -107,7 +107,8 @@
           col,row,
           cols:parseFloat(el.dataset.cols),
           rows:parseFloat(el.dataset.rows),
-          fontScale:parseFloat(el.dataset.fontScale)||1
+          fontScale:parseFloat(el.dataset.fontScale)||1,
+          fontWeight:parseInt(el.dataset.fontWeight)||400
         });
       });
       localStorage.setItem(`layout_${folder}`,JSON.stringify(items));
@@ -117,7 +118,7 @@
       const raw=localStorage.getItem(`layout_${folder}`);
       if(!raw) return;
       const items=JSON.parse(raw);
-      items.forEach(it=>placeMedia(it.text||it.src,it.type,it.col,it.row,it.cols,it.rows,false,it.fontScale||1));
+      items.forEach(it=>placeMedia(it.text||it.src,it.type,it.col,it.row,it.cols,it.rows,false,it.fontScale||1,it.fontWeight||400));
     }
 
     gridContainer.addEventListener('dragover',e=>e.preventDefault());
@@ -139,10 +140,10 @@
       const rect = gridContainer.getBoundingClientRect();
       const col = Math.floor((e.clientX - rect.left) / step);
       const row = Math.floor((e.clientY - rect.top) / step);
-      placeMedia(src, type, col, row, colsSpan, rowsSpan, true, 1);
+      placeMedia(src, type, col, row, colsSpan, rowsSpan, true, 1, 400);
     });
 
-    function placeMedia(src,type,col,row,colsSpan,rowsSpan,doSave,fontScale=1){
+  function placeMedia(src,type,col,row,colsSpan,rowsSpan,doSave,fontScale=1,fontWeight=400){
       const {size, step}=getSizes();
       const c=Math.min(Math.max(0,col),cols-colsSpan),r=Math.min(Math.max(0,row),rows-rowsSpan);
       const wrap=document.createElement('div');
@@ -153,6 +154,7 @@
       wrap.dataset.cols=colsSpan;
       wrap.dataset.rows=rowsSpan;
       wrap.dataset.fontScale=fontScale;
+      wrap.dataset.fontWeight=fontWeight;
       wrap.style.left=`${c*step}px`;
       wrap.style.top=`${r*step}px`;
       wrap.style.width=`${colsSpan*size+(colsSpan-1)*gap}px`;
@@ -184,12 +186,17 @@
         media.className='text-item';
         media.contentEditable='true';
         media.textContent=src||'';
-        const updateScale=scale=>{
+        const updateStyle=()=>{
           const {size:sz}=getSizes();
+          const scale=parseFloat(wrap.dataset.fontScale);
+          const wght=parseInt(wrap.dataset.fontWeight);
           media.style.fontSize=`${sz*scale}px`;
           media.style.lineHeight=`${sz*scale}px`;
+          media.style.fontVariationSettings=`'wght' ${wght}`;
         };
-        updateScale(fontScale);
+        wrap.dataset.fontScale=fontScale;
+        wrap.dataset.fontWeight=400;
+        updateStyle();
         media.addEventListener('input',()=>{wrap.dataset.text=media.textContent; if(doSave) saveLayout(folderSelect.value);});
         media.addEventListener('keydown',e=>{
           if(e.key==='Enter'){
@@ -198,11 +205,18 @@
           }
         });
         wrap.addEventListener('dblclick',()=>{
-          const scale=parseFloat(wrap.dataset.fontScale)||1;
-          const newScale=scale*2;
-          wrap.dataset.fontScale=newScale;
-          updateScale(newScale);
+          wrap.dataset.fontScale=parseFloat(wrap.dataset.fontScale)*2;
+          wrap.dataset.fontWeight=Math.min(900,parseInt(wrap.dataset.fontWeight)+200);
+          updateStyle();
           if(doSave) saveLayout(folderSelect.value);
+        });
+        wrap.addEventListener('click',e=>{
+          if(e.detail===3){
+            wrap.dataset.fontScale=Math.max(0.25,parseFloat(wrap.dataset.fontScale)/2);
+            wrap.dataset.fontWeight=Math.max(100,parseInt(wrap.dataset.fontWeight)-200);
+            updateStyle();
+            if(doSave) saveLayout(folderSelect.value);
+          }
         });
       }
       wrap.appendChild(media);
@@ -210,7 +224,7 @@
         .reduce((m,el)=>Math.max(m,parseInt(el.style.zIndex)||0),0);
       wrap.style.zIndex=maxZ+1;
       wrap.addEventListener('click', (e) => {
-        if (e.detail === 3) {
+        if (e.detail === 3 && type!=='text') {
           wrap.dataset.cols = Math.max(1, Math.floor(wrap.dataset.cols / 4));
           wrap.dataset.rows = Math.max(1, Math.floor(wrap.dataset.rows / 4));
           const { size } = getSizes();
@@ -267,7 +281,7 @@
       if(!r) return;
       if(!(c>0 && r>0)) return alert('Invalid size');
       const col=Math.floor(cols/2 - c/2), row=Math.floor(rows/2 - r/2);
-      placeMedia('Edit me','text',col,row,c,r,true,1);
+      placeMedia('Edit me','text',col,row,c,r,true,1,400);
     });
   </script>
 </body>

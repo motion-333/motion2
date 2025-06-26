@@ -7,70 +7,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet">
   <style>
     html, body { margin:0; padding:0; width:100%; height:100%; background:#fff; overflow:hidden; cursor:default; }
-    /* Top bar */
-    #topbar {
-      position:fixed; top:0; left:0; right:0; height:50px;
-      display:flex; align-items:center;
-      backdrop-filter:blur(10px);
-      background:rgba(255,255,255,0.1);
-      -webkit-mask-image:linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0));
-              mask-image:linear-gradient(to bottom, rgba(0,0,0,1), rgba(0,0,0,0));
-      z-index:5;
-    }
-    #topbar::after {
-      content:"";
-      position:absolute; top:0; left:0; right:0; bottom:-30px;
-      background:linear-gradient(to bottom, rgba(255,255,255,0.9), rgba(255,255,255,0));
-      pointer-events:none; z-index:-1;
-    }
-    #logo {
-      margin-left:20px;
-      color:#1449ff;
-      font-family:'Outfit',sans-serif;
-      font-size:20px;
-      letter-spacing:2px;
-      width:140px;
-      display:inline-block;
-      overflow:hidden;
-    }
-    #tabs {
-      flex:1;
-      display:flex;
-      justify-content:center;
-      gap:8px;
-    }
-    .tab {
-      position:relative;
-      padding:10px 14px;
-      margin:0 4px;
-      cursor:pointer;
-      color:#1449ff;
-      font-family:'Outfit',sans-serif;
-      --wght:400;
-      --wdth:100;
-      font-variation-settings:'wght' var(--wght),'wdth' var(--wdth);
-      transition:font-variation-settings 0.4s ease, transform 0.4s ease;
-      border-radius:8px;
-      display:inline-flex;
-    }
-    .tab span {
-      display:inline-block;
-      --wght:inherit;
-      --wdth:inherit;
-      font-variation-settings:'wght' var(--wght),'wdth' var(--wdth);
-      transition:font-variation-settings 0.4s ease, transform 0.4s ease;
-    }
-    .tab + .tab::before {
-      content:"";
-      position:absolute;
-      left:-4px;
-      top:25%;
-      bottom:25%;
-      width:1px;
-      background:#1449ff66;
-    }
-    .tab:hover { --wdth:900; --wght:800; transform:scaleX(2); }
-    .tab span:hover { --wdth:1500; --wght:900; transform:scaleX(3); }
+    /* Top bar removed */
     /* Glass overlay */
     .glass { position:fixed; top:0; left:0; width:100vw; height:100vh; backdrop-filter:blur(20px) brightness(0.95); opacity:0; transition:opacity 0.8s ease-in-out; pointer-events:none; z-index:2; }
     .glass.visible { opacity:1; }
@@ -100,14 +37,7 @@
   </style>
 </head>
 <body>
-  <div id="topbar">
-    <div id="logo">['[]']'|' :[][\]</div>
-    <div id="tabs">
-      <div class="tab"><span>h</span><span>o</span><span>m</span><span>e</span></div>
-      <div class="tab"><span>w</span><span>o</span><span>r</span><span>k</span></div>
-      <div class="tab"><span>a</span><span>b</span><span>o</span><span>u</span><span>t</span></div>
-    </div>
-  </div>
+  <!-- top bar removed -->
   <div class="glass" id="glass"></div>
   <canvas id="bgCanvas"></canvas>
   <canvas id="fgCanvas"></canvas>
@@ -131,51 +61,9 @@
   <script>
     // Renderer & scene setup
     const bgCanvas = document.getElementById('bgCanvas'), fgCanvas = document.getElementById('fgCanvas'), glass = document.getElementById('glass');
-    const logoEl = document.getElementById('logo');
-    const logoText = "['[]']'|':[][\\]";
-    let logoIndex = 0, logoDir = 1;
-    function logoTick() {
-      logoEl.textContent = logoText.slice(0, logoIndex);
-      if (logoDir === 1) {
-        logoIndex++;
-        if (logoIndex > logoText.length) {
-          logoDir = -1;
-          logoIndex = logoText.length;
-          setTimeout(logoTick, 800);
-          return;
-        }
-      } else {
-        logoIndex--;
-        if (logoIndex < 0) {
-          logoDir = 1;
-          logoIndex = 0;
-        }
-      }
-      setTimeout(logoTick, 120);
-    }
-    logoTick();
+    // logo removed
 
-    const tabs = Array.from(document.querySelectorAll('.tab'));
-    const letters = Array.from(document.querySelectorAll('.tab span'));
-
-    document.addEventListener('mousemove', e => {
-      tabs.forEach(tab => {
-        const r = tab.getBoundingClientRect();
-        const cx = r.left + r.width/2;
-        const cy = r.top + r.height/2;
-        const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
-        const weight = 400 + Math.max(0, 1 - dist/150) * 400;
-        tab.style.setProperty('--wght', weight.toFixed(0));
-      });
-      letters.forEach(letter => {
-        const r = letter.getBoundingClientRect();
-        const cx = r.left + r.width/2;
-        const cy = r.top + r.height/2;
-        const dist = Math.hypot(e.clientX - cx, e.clientY - cy);
-        const weight = 400 + Math.max(0, 1 - dist/80) * 400;
-        letter.style.setProperty('--wght', weight.toFixed(0));
-      });
-    });
+    /* top bar scripts removed */
     const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, antialias:true }); bgRenderer.setClearColor(0xffffff);
     const fgRenderer = new THREE.WebGLRenderer({ canvas: fgCanvas, antialias:true, alpha:true }); fgRenderer.setClearColor(0,0);
     const scene = new THREE.Scene();
