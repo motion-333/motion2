@@ -9,17 +9,15 @@ This repository manages a gallery of folders under `static/pf`.
   `files.json` manifest for each folder. These are used by `grid.html` and
   `gridbuild.html`.
 
-`grid.html` displays a scrolling grid for a single folder. `index.html` now
-includes the same grid as an overlay so clicking a folder opens the grid without
-leaving the page. `gridbuild.html` lets you arrange media items on that grid
-using drag and drop. Layout information is stored in `localStorage` and shared
-with the overlay.
+`grid.html` displays a scrolling grid for a single folder. `gridbuild.html`
+lets you arrange media items on that grid using drag and drop. Layout
+information is stored in `localStorage` and shared with the overlay.
 
 ## Usage
 
 1. Add or remove folders inside `static/pf/`.
 2. Run `python gridbuild.py` to refresh the manifests.
 3. Run `python generate_index_html.py` to rebuild `index.html`.
-4. Open `index.html` in your browser. Clicking a folder flies it toward the
-   camera, opens, fades out, and then shows the grid overlay for that folder.
-   Press `Escape` or click the folder again to return.
+4. Open `index.html` in your browser. Clicking a folder moves it toward the
+   camera and applies a blur effect to the background. Clicking the folder again
+   returns it to its original position.

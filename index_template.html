@@ -43,25 +43,7 @@
     #bgCanvas { z-index:1; }
     #fgCanvas { z-index:3; pointer-events:none; }
     #labels { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:4; }
-    /* Grid overlay */
-    #gridOverlay{position:fixed;top:0;left:0;width:100vw;height:100vh;display:flex;justify-content:center;align-items:center;z-index:6;opacity:0;pointer-events:none;transition:opacity 0.5s;}
-    #gridOverlay.visible{opacity:1;pointer-events:auto;}
-    #controls{position:absolute;top:10px;left:10px;background:rgba(255,255,255,0.9);padding:8px;border-radius:4px;z-index:10;display:flex;gap:8px;align-items:center;}
-    #message{margin:0;}
-    #layoutWrapper{display:flex;flex-direction:column;align-items:center;background:#fff;}
-    #header{width:calc(80vmin + 6px);display:flex;height:10vmin;margin-bottom:-3px;}
-    #leftSquare{width:10vmin;height:100%;background:#eee;box-sizing:border-box;border:3px solid #1449ff;border-right:none;}
-    #rightBox{flex:1;height:100%;overflow:hidden;display:flex;align-items:center;justify-content:center;box-sizing:border-box;border:3px solid #1449ff;border-left:3px solid #1449ff;}
-    #rightBox .interactive-text{width:100%;white-space:nowrap;overflow:visible;font-family:'Roboto Flex',sans-serif;font-size:8vmin;}
-    #rightBox .interactive-text .letter{display:inline-block;overflow:hidden;transition:width 0.2s ease;}
-    #rightBox .interactive-text .letter .char{display:inline-block;transform-origin:left center;transition:transform 0.2s ease,font-variation-settings 0.2s ease;font-variation-settings:'wght' 400;}
-    #viewport{position:relative;overflow:hidden;width:80vmin;height:calc(80vmin * 9 / 16);border:3px solid #1449ff;}
-    #gridContainer{position:absolute;top:50%;left:50%;width:100vw;height:100vh;transform:translate(-50%,-50%);background:#fff;}
-    #grid{display:grid;grid-template-columns:repeat(80,1fr);grid-template-rows:repeat(45,1fr);gap:1px;width:100%;height:100%;}
-    .cell{background:none;border:1px solid #1449ff;aspect-ratio:1/1;}
-    .placed{position:absolute;overflow:hidden;}
-    .placed img,.placed video{width:100%;height:100%;object-fit:cover;pointer-events:none;}
-    .text-item{width:100%;height:100%;display:block;font-family:'Outfit',sans-serif;background:#fff;white-space:pre-wrap;box-sizing:border-box;outline:none;}
+    /* Grid overlay was removed in this version */
     .folder-label {
       position:absolute;
       font-family:'Outfit',sans-serif;
@@ -98,18 +80,6 @@
   <canvas id="bgCanvas"></canvas>
   <canvas id="fgCanvas"></canvas>
   <div id="labels"></div>
-  <div id="gridOverlay">
-    <div id="controls"><div id="message"></div><select id="folderSelect"></select></div>
-    <div id="layoutWrapper">
-      <div id="header">
-        <div id="leftSquare"></div>
-        <div id="rightBox"><div class="interactive-text"></div></div>
-      </div>
-      <div id="viewport">
-        <div id="gridContainer"><div id="grid"></div></div>
-      </div>
-    </div>
-  </div>
   <script src="https://unpkg.com/three@0.148.0/build/three.min.js"></script>
   <script>
     // Renderer & scene setup
@@ -338,104 +308,6 @@ const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
       });
     }
 
-    // ----- Grid overlay -----
-    const gridOverlay = document.getElementById('gridOverlay');
-    const gridContainer = document.getElementById('gridContainer');
-    const gridEl = document.getElementById('grid');
-    const rightBoxText = document.querySelector('#rightBox .interactive-text');
-    const viewport = document.getElementById('viewport');
-    const folderSelect = document.getElementById('folderSelect');
-    const message = document.getElementById('message');
-    const cols = 80, rows = 45, gap = 1;
-    let gridFolder = null, items = [], key = null, offsetX = 0, offsetY = 0;
-
-    for(let i=0;i<cols*rows;i++){
-      const c = document.createElement('div');
-      c.className='cell';
-      gridEl.appendChild(c);
-    }
-
-    function getSizes(){
-      const cell = gridEl.querySelector('.cell');
-      const rect = cell.getBoundingClientRect();
-      return { size: rect.width, step: rect.width + gap };
-    }
-
-    function renderGrid(){
-      const { size, step } = getSizes();
-      gridContainer.querySelectorAll('.placed').forEach(el=>el.remove());
-      items.forEach((item,i)=>{
-        const { cols:cw, rows:rh, col, row, type, text, src, fontScale } = item;
-        const cc = Math.min(Math.max(0,col), cols-cw);
-        const rr = Math.min(Math.max(0,row), rows-rh);
-        const w = cw*size + (cw-1)*gap;
-        const h = rh*size + (rh-1)*gap;
-        const wrap = document.createElement('div');
-        wrap.className='placed';
-        wrap.style.zIndex=i+1;
-        wrap.style.left=`${cc*step}px`;
-        wrap.style.top=`${rr*step}px`;
-        wrap.style.width=`${w}px`;
-        wrap.style.height=`${h}px`;
-        let media;
-        if(type==='text'){
-          media=document.createElement('div');
-          media.className='text-item';
-          media.textContent=text||'';
-          const updateScale=s=>{const {size:sz}=getSizes();media.style.fontSize=`${sz*s}px`;media.style.lineHeight=`${sz*s}px`;};
-          updateScale(fontScale||1);
-        }else{
-          const tag=/\.(mp4|webm)$/i.test(src)?'video':'img';
-          media=document.createElement(tag);
-          if(media.tagName==='VIDEO'){media.controls=false;media.autoplay=true;media.loop=true;media.muted=true;media.playsInline=true;}
-          media.src=src;
-        }
-        wrap.appendChild(media);
-        gridContainer.appendChild(wrap);
-      });
-    }
-
-    function loadLayout(name){
-      key = `layout_${name}`;
-      const raw = localStorage.getItem(key);
-      items = raw ? JSON.parse(raw) : [];
-      renderGrid();
-    }
-
-    function applyGridTransform(){
-      gridContainer.style.transform=`translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
-    }
-
-    viewport.addEventListener('mousemove',e=>{
-      const rect=viewport.getBoundingClientRect();
-      const { size, step } = getSizes();
-      const gridW=cols*size+(cols-1)*gap;
-      const gridH=rows*size+(rows-1)*gap;
-      const maxX=Math.max(0,(gridW-rect.width)/2-step);
-      const maxY=Math.max(0,(gridH-rect.height)/2-step);
-      const margin=60,pan=step/4;let moved=false;
-      if(e.clientX-rect.left<margin){offsetX=Math.min(offsetX+pan,maxX);moved=true;}
-      else if(rect.right-e.clientX<margin){offsetX=Math.max(offsetX-pan,-maxX);moved=true;}
-      if(e.clientY-rect.top<margin){offsetY=Math.min(offsetY+pan,maxY);moved=true;}
-      else if(rect.bottom-e.clientY<margin){offsetY=Math.max(offsetY-pan,-maxY);moved=true;}
-      if(moved)applyGridTransform();
-    });
-
-   function showGrid(name, folderObj){
-      gridFolder=name;
-      rightBoxText.textContent=name;
-      setupInteractiveText(name);
-      message.textContent = `Folder: ${name}`;
-      folderSelect.value = name;
-      loadLayout(name);
-      offsetX=0;offsetY=0;applyGridTransform();
-      gridOverlay.classList.add('visible');
-    }
-
-    function hideGrid(folderObj){
-      gridOverlay.classList.remove('visible');
-    }
-
     // Folder factory
     function createFolder() {
       const g = new THREE.Group();
@@ -477,11 +349,6 @@ const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
     }
 
     const folderNames = FOLDER_NAMES_PLACEHOLDER;
-    // populate folder dropdown for grid overlay
-    folderSelect.innerHTML = folderNames.map(n=>`<option value="${n}">${n}</option>`).join('');
-    folderSelect.addEventListener('change',()=>{
-      showGrid(folderSelect.value);
-    });
 
     // create and add folders
     folders = [];
@@ -522,12 +389,12 @@ const startTime=performance.now();
         ud.startPos.copy(f.position);
         ud.targetPos.set(0, 0, 8);
         glass.classList.add('visible');
-      } else if(gridOverlay.classList.contains('visible')) {
-        hideGrid();
+      } else {
         ud.returning = true;
         ud.returnStart = performance.now();
         ud.returnFrom.copy(f.position);
         ud.returnTo.copy(ud.startPos);
+        glass.classList.remove('visible');
       }
     });
 
@@ -605,37 +472,13 @@ const startTime=performance.now();
           // reset tilts
           f.rotation.y += (0 - f.rotation.y)*0.2;
           f.rotation.z += (0 - f.rotation.z)*0.2;
-          // focused animation phases
+          // focused animation
           if(ud.focused){
             if(ud.phase==='move'){
               const t = Math.min((now-ud.clickStart)/ud.duration,1);
               f.position.lerpVectors(ud.startPos, ud.targetPos, ease(t));
               if(t>=1){
-                ud.phase='open';
-                ud.openStart = now;
-              }
-              return;
-            }
-            if(ud.phase==='open'){
-              const t = Math.min((now-ud.openStart)/1200,1);
-              ud.front.rotation.x = -Math.PI/2 * t;
-              if(t>=1){
-                ud.phase='fade';
-                ud.fadeStart=now;
-              }
-              return;
-            }
-            if(ud.phase==='fade'){
-              const t = Math.min((now-ud.fadeStart)/1000,1);
-              f.traverse(o=>{
-                if(o.material&&'opacity' in o.material){
-                  o.material.transparent=true;
-                  o.material.opacity=1-t;
-                }
-              });
-              if(t>=1){
-                showGrid(ud.name, f);
-                ud.phase="grid";
+                ud.phase='stay';
               }
               return;
             }
@@ -689,19 +532,6 @@ const startTime=performance.now();
     }
     animate();
 
-    window.addEventListener('keydown',e=>{
-      if(e.key==='Escape' && gridOverlay.classList.contains('visible')){
-        hideGrid();
-        const active=folders.find(f=>f.userData.focused);
-        if(active){
-          const ud=active.userData;
-          ud.returning=true;
-          ud.returnStart=performance.now();
-          ud.returnFrom.copy(active.position);
-          ud.returnTo.copy(ud.startPos);
-        }
-      }
-    });
   </script>
 </body>
 </html>
