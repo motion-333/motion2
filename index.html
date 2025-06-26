@@ -25,9 +25,26 @@
     #viewport { position:relative; overflow:hidden; width:80vmin; height:calc(80vmin*9/16); border:3px solid #1449ff; }
     #leftSquare { width:10vmin; height:100%; background:#eee; box-sizing:border-box; border:3px solid #1449ff; border-right:none; }
     #rightBox { flex:1; height:100%; overflow:hidden; display:flex; align-items:center; justify-content:center; box-sizing:border-box; border:3px solid #1449ff; border-left:3px solid #1449ff; }
-    #rightBox .interactive-text { width:100%; white-space:nowrap; overflow:visible; font-family:'Roboto Flex', sans-serif; font-size:8vmin; color:#1449ff; text-align:center; }
-    #rightBox .interactive-text .letter { display:inline-block; overflow:hidden; transition:width 0.2s ease; }
-    #rightBox .interactive-text .letter .char { display:inline-block; transform-origin:left center; transition:transform 0.2s ease, font-variation-settings 0.2s ease; font-variation-settings:'wght' 400; }
+    #rightBox .interactive-text {
+      display:inline-block;
+      width:100%;
+      white-space:nowrap;
+      overflow:visible;
+      font-family:'Roboto Flex', sans-serif;
+      font-size:8vmin;
+      color:#1449ff;
+    }
+    #rightBox .interactive-text .letter {
+      display:inline-block;
+      overflow:hidden;
+      transition:width 0.2s ease;
+    }
+    #rightBox .interactive-text .letter .char {
+      display:inline-block;
+      transform-origin:left center;
+      transition:transform 0.2s ease, font-variation-settings 0.2s ease;
+      font-variation-settings:'wght' 400;
+    }
     #gridContainer { position:absolute; top:50%; left:50%; width:100vw; height:100vh; transform:translate(-50%,-50%); background:#fff; }
     #grid { display:grid; grid-template-columns:repeat(80,1fr); grid-template-rows:repeat(45,1fr); gap:1px; width:100%; height:100%; }
     .cell { background:none; border:1px solid #1449ff; aspect-ratio:1/1; }
@@ -51,7 +68,6 @@
       <div id="viewport">
         <div id="gridContainer"><div id="grid"></div></div>
       </div>
-      <div id="message" style="margin-top:8px;font-family:'Outfit',sans-serif;color:#1449ff;"></div>
     </div>
   </div>
   <script src="https://unpkg.com/three@0.148.0/build/three.min.js"></script>
@@ -113,6 +129,7 @@
       const geom = new THREE.ExtrudeGeometry(shape, { depth:0.03, bevelEnabled:true, bevelThickness:0.025, bevelSize:0.025, bevelSegments:2 });
       const front = new THREE.Mesh(geom, frontMat); front.geometry.translate(0,0.9,0); front.position.z=0.015; front.castShadow=true; g.add(front);
       const back = new THREE.Mesh(geom.clone(), backMat); back.scale.y=1.07; back.position.set(0,0.05,-0.015); back.receiveShadow=true; g.add(back);
+      g.scale.set(0.7,0.7,0.7);
       const lipShape = new THREE.Shape();
       lipShape.moveTo(-1.25,0).quadraticCurveTo(-1.25,0.2,-1.1,0.2).lineTo(-0.6,0.2)
               .quadraticCurveTo(-0.45,0.2,-0.3,0).lineTo(-0.3,-0.3)
@@ -156,7 +173,6 @@
     const overlay = document.getElementById('overlay');
     const gridContainer=document.getElementById('gridContainer');
     const grid=document.getElementById('grid');
-    const message=document.getElementById('message');
     const viewport=document.getElementById('viewport');
     const cols=80, rows=45, gap=1;
     for(let i=0;i<cols*rows;i++){ const c=document.createElement('div'); c.className='cell'; grid.appendChild(c); }
@@ -169,7 +185,7 @@
         const wrap=document.createElement('div'); wrap.className='placed'; wrap.style.zIndex=i+1; wrap.style.left=`${col*step}px`; wrap.style.top=`${row*step}px`; wrap.style.width=`${w}px`; wrap.style.height=`${h}px`;
         let media; if(item.type==='text'){ media=document.createElement('div'); media.className='text-item'; media.textContent=item.text||''; const upd=s=>{const {size:sz}=getSizes(); media.style.fontSize=`${sz*s}px`; media.style.lineHeight=`${sz*s}px`;}; wrap.dataset.fontScale=item.fontScale||1; upd(parseFloat(wrap.dataset.fontScale)); } else { const tag=/(mp4|webm)$/i.test(item.src)?'video':'img'; media=document.createElement(tag); if(media.tagName==='VIDEO'){ media.controls=false; media.autoplay=true; media.loop=true; media.muted=true; media.playsInline=true; } media.src=item.src; }
         wrap.appendChild(media); gridContainer.appendChild(wrap); }); }
-    function loadLayout(name){ key=`layout_${name}`; const raw=localStorage.getItem(key); items=raw?JSON.parse(raw):[]; lastLayout=raw; message.textContent=raw?`Folder: ${name}`:`No layout for '${name}'`; render(); }
+    function loadLayout(name){ key=`layout_${name}`; const raw=localStorage.getItem(key); items=raw?JSON.parse(raw):[]; lastLayout=raw; render(); }
     viewport.addEventListener('mousemove',e=>{ const rect=viewport.getBoundingClientRect(); const {size,step}=getSizes(); const gridW=cols*size+(cols-1)*gap; const gridH=rows*size+(rows-1)*gap; const maxX=Math.max(0,(gridW-rect.width)/2-step); const maxY=Math.max(0,(gridH-rect.height)/2-step); const margin=60,pan=step/4; let moved=false; if(e.clientX-rect.left<margin){offsetX=Math.min(offsetX+pan,maxX);moved=true;} else if(rect.right-e.clientX<margin){offsetX=Math.max(offsetX-pan,-maxX);moved=true;} if(e.clientY-rect.top<margin){offsetY=Math.min(offsetY+pan,maxY);moved=true;} else if(rect.bottom-e.clientY<margin){offsetY=Math.max(offsetY-pan,-maxY);moved=true;} if(moved)applyTransform(); });
     applyTransform();
     window.addEventListener('storage',e=>{ if(e.key===key){ items=e.newValue?JSON.parse(e.newValue):[]; render(); }});
@@ -177,13 +193,67 @@
     function setupInteractiveText(text){
       const C = document.querySelector('#rightBox .interactive-text');
       if(!C) return;
-      C.textContent = text || '';
-      const hoverScale = 1.8, neighborScale = 1.2, normalWght = 400, neighborWght = 600, hoverWght = 900;
-      const txt = C.textContent.trim();
+      const hoverScale=1.8, neighborScale=1.2,
+            normalWght=400, neighborWght=600, hoverWght=900;
       C.textContent = '';
-      for(const ch of txt){ const out=document.createElement('span'); out.className='letter'; const inn=document.createElement('span'); inn.className='char'; inn.textContent=ch; out.appendChild(inn); C.appendChild(out); }
-      const letters=Array.from(C.children); const n=letters.length; let base=[],scaled=[],sum=0,total=0;
-      requestAnimationFrame(()=>{ letters.forEach(o=>{ const inn=o.firstElementChild; inn.style.transform='scaleX(1)'; const w=inn.getBoundingClientRect().width; base.push(w); sum+=w; }); total=C.getBoundingClientRect().width; const S=total/sum; scaled=base.map(w=>w*S); letters.forEach((o,i)=>{ const inn=o.firstElementChild; o.style.width=`${scaled[i]}px`; inn.style.width=`${base[i]}px`; inn.style.transform=`scaleX(${S})`; inn.style.fontVariationSettings=`'wght' ${normalWght}`; }); letters.forEach((o,i)=>{ o.onmouseenter=()=>{ const Rh=hoverScale,Rn=neighborScale; const wH=scaled[i]; const wN=(i>0?scaled[i-1]:0)+(i<n-1?scaled[i+1]:0); const wO=total-wH-wN; const Ro=(total-wH*Rh-wN*Rn)/wO; letters.forEach((oo,j)=>{ const ch=oo.firstElementChild; let R,wght; if(j===i){R=Rh;wght=hoverWght;} else if(j===i-1||j===i+1){R=Rn;wght=neighborWght;} else {R=Ro;wght=normalWght;} oo.style.width=`${scaled[j]*R}px`; ch.style.transform=`scaleX(${S*R})`; ch.style.fontVariationSettings=`'wght' ${wght}`; }); }; o.onmouseleave=()=>{ letters.forEach((oo,j)=>{ const ch=oo.firstElementChild; oo.style.width=`${scaled[j]}px`; ch.style.transform=`scaleX(${S})`; ch.style.fontVariationSettings=`'wght' ${normalWght}`; }); }; }); }); }
+      for(const ch of (text||'').trim()){
+        const out=document.createElement('span');
+        out.className='letter';
+        const inn=document.createElement('span');
+        inn.className='char';
+        inn.textContent=ch;
+        out.appendChild(inn);
+        C.appendChild(out);
+      }
+      const letters=Array.from(C.children);
+      let baseWidths=[], scaled=[], sumBase=0, totalW=0;
+      requestAnimationFrame(()=>{
+        letters.forEach(o=>{
+          const inn=o.firstElementChild;
+          inn.style.transform='scaleX(1)';
+          const w=inn.getBoundingClientRect().width;
+          baseWidths.push(w);
+          sumBase+=w;
+        });
+        totalW=C.getBoundingClientRect().width;
+        const S=totalW/sumBase;
+        scaled=baseWidths.map(w=>w*S);
+        letters.forEach((o,i)=>{
+          const inn=o.firstElementChild;
+          o.style.width=scaled[i]+'px';
+          inn.style.width=baseWidths[i]+'px';
+          inn.style.transform=`scaleX(${S})`;
+          inn.style.fontVariationSettings=`'wght' ${normalWght}`;
+        });
+        letters.forEach((o,i)=>{
+          o.onmouseenter=()=>{
+            const wH=scaled[i];
+            const wN=(i>0?scaled[i-1]:0)+(i<letters.length-1?scaled[i+1]:0);
+            const wO=totalW-wH-wN;
+            const R_h=hoverScale, R_n=neighborScale;
+            const R_o=(totalW-wH*R_h-wN*R_n)/wO;
+            letters.forEach((oo,j)=>{
+              const ch=oo.firstElementChild;
+              let R,wght;
+              if(j===i){R=R_h; wght=hoverWght;}
+              else if(j===i-1||j===i+1){R=R_n; wght=neighborWght;}
+              else {R=R_o; wght=normalWght;}
+              oo.style.width=scaled[j]*R+'px';
+              ch.style.transform=`scaleX(${S*R})`;
+              ch.style.fontVariationSettings=`'wght' ${wght}`;
+            });
+          };
+          o.onmouseleave=()=>{
+            letters.forEach((oo,j)=>{
+              const ch=oo.firstElementChild;
+              oo.style.width=scaled[j]+'px';
+              ch.style.transform=`scaleX(${S})`;
+              ch.style.fontVariationSettings=`'wght' ${normalWght}`;
+            });
+          };
+        });
+      });
+    }
     function showGrid(name){ currentFolder=name; overlay.style.display='flex'; setupInteractiveText(name); loadLayout(name); }
     function hideGrid(){ overlay.style.display='none'; }
 
@@ -198,7 +268,7 @@
         ud.focused = true;
         ud.clickStart = performance.now();
         ud.startPos.copy(f.position);
-        ud.targetPos.set(-4,1.8,8);
+        ud.targetPos.set(-5,1.5,8);
         glass.classList.add('visible');
         showGrid(ud.name);
       } else {
