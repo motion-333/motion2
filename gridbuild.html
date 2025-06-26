@@ -80,16 +80,22 @@
             el.dataset.cols=rw*scale;
             el.dataset.rows=rh*scale;
           });
-          el.addEventListener('dragstart',e=>{
-            const payload=JSON.stringify({
-              src:el.dataset.src,
-              type:el.dataset.type,
-              cols:el.dataset.cols,
-              rows:el.dataset.rows
+            el.addEventListener("dragstart", e => {
+              if(!el.dataset.cols || !el.dataset.rows){
+                const w = el.videoWidth || el.naturalWidth;
+                const h = el.videoHeight || el.naturalHeight;
+                const cw = Math.max(1, Math.round(w/100));
+                const ch = Math.max(1, Math.round(h/100));
+                const d = gcd(cw, ch);
+                const rw = cw/d, rh = ch/d;
+                const scale = Math.max(1, Math.ceil(minCells/Math.max(rw, rh)));
+                el.dataset.cols = rw*scale;
+                el.dataset.rows = rh*scale;
+              }
+              const payload = JSON.stringify({src: el.dataset.src, type: el.dataset.type, cols: el.dataset.cols, rows: el.dataset.rows});
+              e.dataTransfer.setData("application/json", payload);
+              e.dataTransfer.setData("text/plain", payload);
             });
-            e.dataTransfer.setData('application/json',payload);
-            e.dataTransfer.setData('text/plain',payload);
-          });
           fileList.appendChild(el);
         });loadLayout(folder);
       }).catch(_=>fileList.innerHTML='<div class="error">Error loading files.json</div>');

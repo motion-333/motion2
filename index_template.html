@@ -44,8 +44,8 @@
     #fgCanvas { z-index:3; pointer-events:none; }
     #labels { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:4; }
     /* Grid overlay */
-    #gridOverlay{position:fixed;top:0;left:0;width:100vw;height:100vh;display:none;justify-content:center;align-items:center;z-index:6;}
-    #gridOverlay.visible{display:flex;}
+    #gridOverlay{position:fixed;top:0;left:0;width:100vw;height:100vh;display:flex;justify-content:center;align-items:center;z-index:6;opacity:0;pointer-events:none;transition:opacity 0.5s;}
+    #gridOverlay.visible{opacity:1;pointer-events:auto;}
     #layoutWrapper{display:flex;flex-direction:column;align-items:center;background:#fff;}
     #header{width:calc(80vmin + 6px);display:flex;height:10vmin;margin-bottom:-3px;}
     #leftSquare{width:10vmin;height:100%;background:#eee;box-sizing:border-box;border:3px solid #1449ff;border-right:none;}
@@ -240,6 +240,19 @@
     });
 
 const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
+    const labelPosV = new THREE.Vector3();
+    function updateLabels(){
+      folders.forEach(f=>{
+        const label = f.userData.label;
+        if(!label) return;
+        labelPosV.copy(f.position);
+        labelPosV.project(camera);
+        const x = (labelPosV.x*0.5+0.5)*window.innerWidth;
+        const y = (-labelPosV.y*0.5+0.5)*window.innerHeight;
+        label.style.left = x + "px";
+        label.style.top = (y+10)+"px";
+      });
+    }
 
     function setupActiveLabel(label){
       const hoverScale = 1.8;
@@ -466,10 +479,12 @@ const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
       label.textContent = name;
       labelsDiv.appendChild(label);
       setupActiveLabel(label);
-      requestAnimationFrame(()=>{
-        label.dataset.baseSize = parseFloat(getComputedStyle(label).fontSize);
-        label.dataset.baseH = label.offsetHeight;
-      });
+      const letters = Array.from(label.querySelectorAll(".letter"));
+      const chars = letters.map(l=>l.firstElementChild);
+      f.userData.letters = letters;
+      f.userData.chars = chars;
+      label.dataset.baseSize = parseFloat(getComputedStyle(label).fontSize);
+      label.dataset.baseH = label.offsetHeight;
       f.userData.label = label;
       scene.add(f);
       folders.push(f);
@@ -593,6 +608,7 @@ const startTime=performance.now();
               if(t>=1){
                 ud.phase='fade';
                 ud.fadeStart=now;
+                showGrid(ud.name, f);
               }
               return;
             }
@@ -605,8 +621,7 @@ const startTime=performance.now();
                 }
               });
               if(t>=1){
-                ud.phase='grid';
-                showGrid(ud.name, f);
+                ud.phase="grid";
               }
               return;
             }
@@ -650,6 +665,7 @@ const startTime=performance.now();
       currentMouse.y += (targetMouse.y-currentMouse.y)*0.02*a2;
       camera.position.set(currentMouse.x*3,currentMouse.y*3,16);
       camera.lookAt(0,0,0);
+      updateLabels();
       // render
       bgRenderer.render(scene,camera);
       const active = folders.find(f=>f.userData.focused);
