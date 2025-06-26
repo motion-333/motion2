@@ -10,7 +10,7 @@
     #asciiBG{
       position:fixed;
       top:0; left:0;
-      width:100%; height:100%;
+      width:100vw; height:100vh;
       font-family:monospace;
       font-size:12px;
       line-height:12px;
@@ -57,15 +57,6 @@
       pointer-events:none;
       opacity:1;
     }
-    .folder-label.focused{
-      pointer-events:auto;
-      position:absolute;
-      inset:0;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      transition:transform 0.3s ease, font-size 0.3s ease, opacity 0.2s ease;
-    }
     .folder-label .letter{
       display:inline-block;
       overflow:hidden;
@@ -78,73 +69,6 @@
       transition:transform 0.2s ease, font-variation-settings 0.2s ease;
       font-variation-settings:'wght' 400;
     }
-    #frame {
-      position:fixed;
-      top:50%;
-      left:50%;
-      width:75vw;
-      height:95vh;
-      transform:translate(-50%,-50%);
-      border:2px solid #1449ff;
-      box-sizing:border-box;
-      pointer-events:none;
-      display:none;
-      z-index:2;
-    }
-    #frame.active { display:block; }
-    #frame .square {
-      position:absolute;
-      top:-2px;
-      left:-2px;
-      width:calc(20vh + 2px);
-      height:calc(20vh + 2px);
-      box-sizing:border-box;
-      border:2px solid #1449ff;
-    }
-    #frame .title-rect {
-      position:absolute;
-      top:-2px;
-      left:calc(20vh - 2px);
-      height:calc(20vh + 2px);
-      width:calc(100% - 20vh + 4px);
-      box-sizing:border-box;
-      border:2px solid #1449ff;
-      overflow:hidden;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-    #frame .bottom-rect {
-      position:absolute;
-      top:calc(20vh - 2px);
-      left:-2px;
-      width:calc(100% + 4px);
-      height:calc(100% - 20vh + 4px);
-      box-sizing:border-box;
-      border:2px solid #1449ff;
-      overflow:hidden;
-    }
-    #frame .bottom-rect .grid {
-      position:absolute;
-      top:0;
-      left:0;
-      width:400%;
-      height:400%;
-      --s: calc(100%/32);
-      background-image:
-        repeating-linear-gradient(#1449ff 0 2px, transparent 2px var(--s)),
-        repeating-linear-gradient(90deg, #1449ff 0 2px, transparent 2px var(--s));
-      background-size:var(--s) var(--s);
-      display:grid;
-      grid-template-columns:repeat(32,1fr);
-      grid-template-rows:repeat(32,1fr);
-      pointer-events:none;
-    }
-    #frame .bottom-rect .grid-item {
-      position:absolute;
-      background-size:cover;
-      background-position:center;
-    }
   </style>
 </head>
 <body>
@@ -152,7 +76,6 @@
   <div class="glass" id="glass"></div>
   <pre id="asciiBG"></pre>
   <canvas id="bgCanvas"></canvas>
-  <div id="frame"><div class="square"></div><div class="title-rect"></div><div class="bottom-rect"><div class="grid"></div></div></div>
   <canvas id="fgCanvas"></canvas>
   <div id="labels"></div>
   <script src="https://unpkg.com/three@0.148.0/build/three.min.js"></script>
@@ -160,10 +83,6 @@
     // Renderer & scene setup
     const bgCanvas = document.getElementById('bgCanvas'), fgCanvas = document.getElementById('fgCanvas'), glass = document.getElementById('glass');
     const asciiBG = document.getElementById('asciiBG');
-    const frame = document.getElementById('frame');
-    const bottomRect = frame.querySelector('.bottom-rect');
-    const titleRect = frame.querySelector('.title-rect');
-    const gridEl = bottomRect.querySelector('.grid');
     const labelsDiv = document.getElementById('labels');
     const logoEl = document.getElementById('logo');
     const logoText = "['[]']'|':[][\\]";
@@ -190,8 +109,8 @@
     logoTick();
 
     function resizeAscii(){
-      const cols = Math.floor(window.innerWidth/12);
-      const rows = Math.floor(window.innerHeight/12);
+      const cols = Math.ceil(window.innerWidth/12);
+      const rows = Math.ceil(window.innerHeight/12);
       asciiBG.dataset.cols = cols;
       asciiBG.dataset.rows = rows;
     }
@@ -212,30 +131,6 @@
 
     let folders = [];
     let magnetized = null;
-    const CELL = 32;
-    let activeFolder = null;
-
-    let gridX = -150, gridY = -150, targetGX = -150, targetGY = -150;
-    function updateGrid(){
-      gridX += (targetGX - gridX)*0.1;
-      gridY += (targetGY - gridY)*0.1;
-      const r = bottomRect.getBoundingClientRect();
-      const ratio = r.height / r.width;
-      const scaleX = ratio < 1 ? ratio : 1;
-      const scaleY = ratio > 1 ? 1/ratio : 1;
-      gridEl.style.transform = `translate(${gridX}%, ${gridY}%) scale(${scaleX}, ${scaleY})`;
-      requestAnimationFrame(updateGrid);
-    }
-    updateGrid();
-    bottomRect.addEventListener('mousemove', e=>{
-      const r = bottomRect.getBoundingClientRect();
-      const cell = Math.min(r.width, r.height)/4;
-      if(e.clientX - r.left < cell) targetGX = Math.min(targetGX + 25, 0);
-      else if(r.right - e.clientX < cell) targetGX = Math.max(targetGX - 25, -300);
-      if(e.clientY - r.top < cell) targetGY = Math.min(targetGY + 25, 0);
-      else if(r.bottom - e.clientY < cell) targetGY = Math.max(targetGY - 25, -300);
-    });
-    bottomRect.addEventListener('mouseleave', ()=>{ targetGX = -150; targetGY = -150; });
 
   document.addEventListener('mousemove', e => {
       folders.forEach(f=>{
@@ -291,7 +186,6 @@
       fgRenderer.setSize(window.innerWidth, window.innerHeight);
       camera.aspect = window.innerWidth/window.innerHeight;
       camera.updateProjectionMatrix();
-      updateLabels();
     });
     bgRenderer.setSize(window.innerWidth, window.innerHeight);
     fgRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -367,12 +261,10 @@ const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
 
       requestAnimationFrame(init);
 
-      label.refreshLayout = init;
 
       letters.forEach((out,i)=>{
         const inn = inners[i];
         out.addEventListener('mouseenter',()=>{
-          if(!label.classList.contains('focused')) return;
           const wH = baseScaled[i];
           const wN = (i>0?baseScaled[i-1]:0) + (i<n-1?baseScaled[i+1]:0);
           const wO = totalW - wH - wN;
@@ -390,7 +282,6 @@ const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
           });
         });
         out.addEventListener('mouseleave',()=>{
-          if(!label.classList.contains('focused')) return;
           letters.forEach((o,j)=>{
             const ch = inners[j];
             o.style.width = baseScaled[j] + 'px';
@@ -465,134 +356,25 @@ const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
     const introDur=3000, scatterDur=2000;
 const startTime=performance.now();
 
-    const targetDepth = 14;
-    function squareWorldPos(){
-      const frameRect = frame.getBoundingClientRect();
-      const sq = window.innerHeight * 0.2;
-      const cx = frameRect.left + sq/2;
-      const cy = frameRect.top + sq/2;
-      const ndc = {
-        x: (cx / window.innerWidth) * 2 - 1,
-        y: -(cy / window.innerHeight) * 2 + 1
-      };
-      raycaster.setFromCamera(ndc, camera);
-      const pos = raycaster.ray.origin.clone().add(raycaster.ray.direction.multiplyScalar(targetDepth));
-      pos.y -= 0.8;
-      return pos;
-    }
-
-    function loadLayout(name){
-      let items = [];
-      const stored = localStorage.getItem('layout_'+name);
-      if(stored){
-        try{ items = JSON.parse(stored); }catch(e){ items = []; }
-      }
-      function render(list){
-        gridEl.innerHTML='';
-        list.forEach(it=>{
-          const div=document.createElement(it.path.endsWith('.mp4')?'video':'img');
-          if(div.tagName==='VIDEO'){div.src=`static/pf/${name}/${it.path}`;div.autoplay=true;div.loop=true;div.muted=true;}
-          else div.src=`static/pf/${name}/${it.path}`;
-          div.className='grid-item';
-          div.style.left=`${(it.x/CELL)*100}%`;
-          div.style.top=`${(it.y/CELL)*100}%`;
-          div.style.width=`${(it.w/CELL)*100}%`;
-          div.style.height=`${(it.h/CELL)*100}%`;
-          gridEl.appendChild(div);
-        });
-      }
-      if(items.length){
-        render(items);
-      } else {
-        fetch(`layouts/${name}.json`)
-          .then(r=>r.ok?r.json():[])
-          .then(data=>{render(data);})
-          .catch(()=>{});
-      }
-    }
-
-    function updateLabels(){
-      folders.forEach(f=>{
-        const label = f.userData.label;
-        if(f.userData.focused){
-          if(label.parentElement!==titleRect){
-            titleRect.innerHTML='';
-            titleRect.appendChild(label);
-          }
-          const rect = titleRect.getBoundingClientRect();
-          const sy = rect.height / label.dataset.baseH;
-          label.style.position = 'absolute';
-          label.style.left = '50%';
-          label.style.top = '50%';
-          label.style.width = `${rect.width}px`;
-          label.style.height = `${rect.height}px`;
-          label.style.fontSize = `${label.dataset.baseSize * sy}px`;
-          label.style.transform = 'translate(-50%,-50%)';
-          label.classList.add('focused');
-          label.style.pointerEvents = 'auto';
-          if(label.refreshLayout) label.refreshLayout();
-        } else {
-          if(label.parentElement!==labelsDiv) labelsDiv.appendChild(label);
-          const v = f.position.clone();
-          v.project(camera);
-          const x = (v.x * 0.5 + 0.5) * window.innerWidth;
-          const y = (-v.y * 0.5 + 0.5) * window.innerHeight + 6;
-          label.style.left = `${x}px`;
-          label.style.top = `${y}px`;
-          label.style.width = 'auto';
-          label.style.height = 'auto';
-          label.style.transform = 'translate(-50%,0)';
-          label.style.fontSize = `${label.dataset.baseSize}px`;
-          label.classList.remove('focused');
-          label.style.pointerEvents = 'none';
-          if(label.refreshLayout) label.refreshLayout();
-        }
-      });
-    }
 
     // click behavior
-    window.addEventListener('click', ()=>{
+    window.addEventListener('click', () => {
       raycaster.setFromCamera(mouse, camera);
-      const hits = raycaster.intersectObjects(folders.map(f=>f.userData.front));
-      if(!hits.length) return;
-      const f = hits[0].object.parent, ud = f.userData;
-      if(!ud.focused) {
+      const hit = raycaster.intersectObjects(folders.map(f => f.userData.front))[0];
+      if(!hit) return;
+      const f = hit.object.parent, ud = f.userData;
+      if(!ud.focused){
         ud.focused = true;
         ud.clickStart = performance.now();
         ud.startPos.copy(f.position);
-        ud.targetPos.copy(squareWorldPos());
-        f.rotation.x = 0;
-        f.rotation.y = 0;
-        f.rotation.z = 0;
+        ud.targetPos.set(0, 0, 8);
         glass.classList.add('visible');
-        frame.classList.add('active');
-        activeFolder = ud.name;
-        loadLayout(ud.name);
-        const label = ud.label;
-        titleRect.innerHTML = '';
-        titleRect.appendChild(label);
-        label.classList.add('focused');
-        if(label.refreshLayout) requestAnimationFrame(label.refreshLayout);
-        console.log('Selected folder:', ud.name);
-      } else {
+      }else{
         ud.returning = true;
         ud.returnStart = performance.now();
         ud.returnFrom.copy(f.position);
         ud.returnTo.copy(ud.startPos);
         glass.classList.remove('visible');
-        frame.classList.remove('active');
-        gridEl.innerHTML = '';
-        activeFolder = null;
-        const label = ud.label;
-        labelsDiv.appendChild(label);
-        label.classList.remove('focused');
-        label.style.transition = 'transform 0.3s ease, font-size 0.3s ease, opacity 0s';
-        label.style.opacity = 0;
-        setTimeout(()=>{
-          label.style.transition = 'transform 0.3s ease, font-size 0.3s ease, opacity 0.2s';
-          label.style.opacity = 1;
-          if(label.refreshLayout) label.refreshLayout();
-        }, 1000);
       }
     });
 
@@ -674,19 +456,17 @@ const startTime=performance.now();
           if(ud.returning) {
             const t = Math.min((now-ud.returnStart)/ud.returnDuration,1);
             f.position.lerpVectors(ud.returnFrom, ud.returnTo, ease(t));
-            if(t>=1) { ud.returning=false; ud.focused=false; frame.classList.remove('active'); }
+            if(t>=1) { ud.returning=false; ud.focused=false; }
             return;
           }
           // focused
           if(ud.focused) {
-            const target = squareWorldPos();
-            ud.targetPos.copy(target);
             const t = Math.min((now-ud.clickStart)/ud.duration,1);
-            f.position.lerpVectors(ud.startPos, target, ease(t));
+            f.position.lerpVectors(ud.startPos, ud.targetPos, ease(t));
             f.rotation.x = 0;
             f.rotation.y = 0;
             f.rotation.z = 0;
-            if(t>=1) f.position.copy(target);
+            if(t>=1) f.position.copy(ud.targetPos);
             return;
           }
           // hover open
@@ -733,14 +513,8 @@ const startTime=performance.now();
       const active = folders.find(f=>f.userData.focused);
       folders.forEach(f=>f.visible = !active || f===active);
       fgRenderer.render(scene,camera);
-      updateLabels();
       folders.forEach(f=>f.visible=true);
     }
-    window.addEventListener('storage', e => {
-      if(activeFolder && e.key === 'layout_'+activeFolder){
-        loadLayout(activeFolder);
-      }
-    });
     animate();
   </script>
 </body>

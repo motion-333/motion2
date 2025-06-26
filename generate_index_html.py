@@ -3,9 +3,7 @@ import json
 from link_model_folders import associate_models
 
 TEMPLATE_FILE = Path('index_template.html')
-BUILDER_TEMPLATE_FILE = Path('builder_template.html')
 INDEX_FILE = Path('index.html')
-BUILDER_FILE = Path('builder.html')
 
 
 def generate_index():
@@ -26,12 +24,7 @@ def generate_index():
     html = html.replace('FOLDER_FILES_PLACEHOLDER', json.dumps(folder_files))
     INDEX_FILE.write_text(html)
 
-    builder_tmpl = BUILDER_TEMPLATE_FILE.read_text()
-    builder_html = builder_tmpl.replace('FOLDER_NAMES_PLACEHOLDER', json.dumps(folders))
-    builder_html = builder_html.replace('FOLDER_FILES_PLACEHOLDER', json.dumps(folder_files))
-    BUILDER_FILE.write_text(builder_html)
-
-    print(f"Wrote {INDEX_FILE} and {BUILDER_FILE} with {len(folders)} folders.")
+    print(f"Wrote {INDEX_FILE} with {len(folders)} folders.")
 
 
 if __name__ == '__main__':
