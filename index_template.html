@@ -45,6 +45,7 @@
       z-index:2;
     }
     #ascii .fg { color:#1449ff; }
+    #ascii .currency { color:#888; }
     #vignette {
       position:fixed;
       inset:0;
@@ -179,33 +180,34 @@
       if(now - lastAscii < 83) return; // ~12 fps
       lastAscii = now;
       const cols = Math.floor(window.innerWidth/9);
-      const rows = Math.floor(window.innerHeight/16) + 4;
+      const rows = Math.floor(window.innerHeight/16) + 2;
       const grid = Array.from({length:rows},()=>Array(cols).fill('').map(()=>asciiChars[Math.floor(Math.random()*asciiChars.length)]));
       folders.forEach(f=>{
         const v = f.position.clone().project(camera);
         const px = (v.x*0.5+0.5)*window.innerWidth;
         const py = (-v.y*0.5+0.5)*window.innerHeight;
-        const cx = Math.round(px/9) - 4;
+        const cx = Math.round(px/9) - 5;
         const cy = Math.round((py + 16)/16) - 2;
         let radius = 6;
         if(f.userData.hovered){
           radius *= 1.2 + 0.2*Math.sin(performance.now()/500);
         }
         const rOut = radius + 1;
-        for(let y=-rOut; y<=rOut; y++){
-          for(let x=-rOut; x<=rOut; x++){
-            const dist = Math.hypot(x*1.5, y);
+        for(let y=-rOut+1; y<=rOut-1; y++){
+          for(let x=-rOut-1; x<=rOut+1; x++){
+            const dist = Math.hypot(x*1.6, y*0.8);
             const tx = cx + x, ty = cy + y;
             if(tx>=0 && tx<cols && ty>=0 && ty<rows){
               if(dist <= radius-0.5){
-                grid[ty][tx] = '<span class="fg">€</span>';
+                grid[ty][tx] = '<span class="currency">€</span>';
               } else if(dist <= rOut){
-                grid[ty][tx] = '<span class="fg">$</span>';
+                grid[ty][tx] = '<span class="currency">$</span>';
               }
             }
           }
         }
       });
+      const hovered = folders.find(f=>f.userData.hovered);
       // typing effect line
       const msg = getTypedMessage(now);
       if(msg){
@@ -214,6 +216,13 @@
           for(let i=0;i<msg.length && start+i<cols;i++){
             grid[2][start+i] = `<span class="fg">${msg[i]}</span>`;
           }
+        }
+      }
+      if(hovered){
+        const name = hovered.userData.name.toUpperCase();
+        const start = Math.max(0, Math.floor((cols - name.length)/2));
+        for(let i=0;i<name.length && start+i<cols;i++){
+          grid[rows-3][start+i] = `<span class="fg">${name[i]}</span>`;
         }
       }
       ascii.innerHTML = grid.map(row=>row.join('')).join('\n');
@@ -337,8 +346,25 @@
         const col=Math.min(Math.max(0,item.col),cols-item.cols); const row=Math.min(Math.max(0,item.row),rows-item.rows);
         const w=item.cols*size+(item.cols-1)*gap; const h=item.rows*size+(item.rows-1)*gap;
         const wrap=document.createElement('div'); wrap.className='placed'; wrap.style.zIndex=i+1; wrap.style.left=`${col*step}px`; wrap.style.top=`${row*step}px`; wrap.style.width=`${w}px`; wrap.style.height=`${h}px`;
-        let media; if(item.type==='text'){ media=document.createElement('div'); media.className='text-item'; media.textContent=item.text||''; const upd=s=>{const {size:sz}=getSizes(); media.style.fontSize=`${sz*s}px`; media.style.lineHeight=`${sz*s}px`;}; wrap.dataset.fontScale=item.fontScale||1; upd(parseFloat(wrap.dataset.fontScale)); } else { const tag=/(mp4|webm)$/i.test(item.src)?'video':'img'; media=document.createElement(tag); if(media.tagName==='VIDEO'){ media.controls=false; media.autoplay=true; media.loop=true; media.muted=true; media.playsInline=true; } media.src=item.src; }
-        wrap.appendChild(media); gridContainer.appendChild(wrap); }); }
+        let media;
+        if(item.type==='text'){
+          media=document.createElement('div');
+          media.className='text-item';
+          media.textContent=item.text||'';
+          const upd=s=>{const {size:sz}=getSizes(); media.style.fontSize=`${sz*s}px`; media.style.lineHeight=`${sz*s}px`;};
+          wrap.dataset.fontScale=item.fontScale||1; upd(parseFloat(wrap.dataset.fontScale));
+        } else {
+          const tag=/(mp4|webm)$/i.test(item.src)?'video':'img';
+          media=document.createElement(tag);
+          if(media.tagName==='VIDEO'){
+            media.controls=false; media.autoplay=true; media.loop=true; media.muted=true; media.playsInline=true;
+          }
+          media.src=item.src;
+        }
+        wrap.appendChild(media);
+        gridContainer.appendChild(wrap);
+        if(item.type!=='text') attachBitmapToggle(wrap, media);
+      }); }
     function loadLayout(name){ key=`layout_${name}`; const raw=localStorage.getItem(key); items=raw?JSON.parse(raw):[]; lastLayout=raw; render(); }
     let panDirX=0, panDirY=0, panVX=0, panVY=0;
     const margin=120;
@@ -365,7 +391,7 @@
     panStep();
     window.addEventListener('storage',e=>{ if(e.key===key){ items=e.newValue?JSON.parse(e.newValue):[]; render(); }});
     setInterval(()=>{ const cur=localStorage.getItem(key); if(cur!==lastLayout){ lastLayout=cur; items=cur?JSON.parse(cur):[]; render(); } },1000);
-    function setupInteractiveText(text){
+function setupInteractiveText(text){
       const C = document.querySelector('#rightBox .interactive-text');
       if(!C) return;
       const hoverScale=1.8, neighborScale=1.2,
@@ -379,7 +405,59 @@
         inn.textContent=ch;
         out.appendChild(inn);
         C.appendChild(out);
-      }
+}
+
+    function attachBitmapToggle(wrap, media){
+      if(!(media.tagName==='VIDEO' || media.tagName==='IMG')) return;
+      let timer=null, state=null;
+      const startBitmap=()=>{
+        const canvas=document.createElement('canvas');
+        const ctx=canvas.getContext('2d');
+        canvas.width=media.videoWidth||media.naturalWidth||wrap.offsetWidth;
+        canvas.height=media.videoHeight||media.naturalHeight||wrap.offsetHeight;
+        canvas.style.width='100%';
+        canvas.style.height='100%';
+        wrap.appendChild(canvas);
+        media.style.display='none';
+        const fps=12,pixelSize=10,maxRadius=pixelSize*0.45;
+        function draw(){
+          const cols=Math.floor(canvas.width/pixelSize);
+          const rows=Math.floor(canvas.height/pixelSize);
+          const off=document.createElement('canvas');
+          off.width=cols; off.height=rows;
+          off.getContext('2d').drawImage(media,0,0,cols,rows);
+          const data=off.getContext('2d').getImageData(0,0,cols,rows).data;
+          ctx.clearRect(0,0,canvas.width,canvas.height);
+          for(let y=0;y<rows;y++){
+            for(let x=0;x<cols;x++){
+              const i=(y*cols+x)*4;
+              const br=(data[i]+data[i+1]+data[i+2])/(3*255);
+              const rad=(1-br)*maxRadius;
+              const cx=x*pixelSize+pixelSize/2;
+              const cy=y*pixelSize+pixelSize/2;
+              ctx.fillStyle='#1449ff';
+              ctx.beginPath();
+              ctx.arc(cx,cy,rad,0,Math.PI*2);
+              ctx.fill();
+            }
+          }
+        }
+        draw();
+        const interval=setInterval(draw,1000/fps);
+        state={canvas,interval};
+      };
+      const stopBitmap=()=>{
+        if(!state) return;
+        clearInterval(state.interval); state.canvas.remove();
+        media.style.display='';
+        state=null;
+      };
+      wrap.addEventListener('mousedown',e=>{
+        if(e.button!==0) return;
+        timer=setTimeout(()=>{ if(state) stopBitmap(); else startBitmap(); },2000);
+      });
+      document.addEventListener('mouseup',()=>{ clearTimeout(timer); });
+    }
       const letters=Array.from(C.children);
       let baseWidths=[], scaled=[], sumBase=0, totalW=0;
       requestAnimationFrame(()=>{
