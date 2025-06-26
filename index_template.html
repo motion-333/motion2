@@ -60,7 +60,7 @@
     #overlay.visible { opacity:1; }
     #layoutWrapper { display:flex; flex-direction:column; align-items:center; pointer-events:auto; }
     #header { width:calc(120vmin + 6px); display:flex; height:15vmin; margin-bottom:-3px; }
-    #viewport { position:relative; overflow:hidden; width:120vmin; height:calc(120vmin*9/16); border:3px solid #1449ff; }
+    #viewport { position:relative; overflow:hidden; width:120vmin; height:calc(120vmin*9/16 + 6vmin); border:3px solid #1449ff; }
     #leftSquare { width:15vmin; height:100%; background:#fff; box-sizing:border-box; border:3px solid #1449ff; border-right:none; }
     #rightBox { flex:1; height:100%; overflow:hidden; display:flex; align-items:center; justify-content:center; box-sizing:border-box; border:3px solid #1449ff; border-left:3px solid #1449ff; background:#fff; }
     #rightBox .interactive-text {
@@ -364,7 +364,7 @@
      currentFolder = name;
      overlay.classList.add('show');
      overlay.classList.remove('visible');
-      ascii.classList.add('front');
+      setTimeout(()=>ascii.classList.add('front'), 200);
       window.asciiHover = name;
       labelsContainer.classList.add('hidden');
       setupInteractiveText(name);
@@ -374,7 +374,7 @@
    function hideGrid(){
      overlay.classList.remove('visible');
      overlay.addEventListener('transitionend', () => overlay.classList.remove('show'), { once: true });
-      ascii.classList.remove('front');
+      setTimeout(()=>ascii.classList.remove('front'), 200);
       window.asciiHover = '';
       labelsContainer.classList.remove('hidden');
    }
@@ -391,7 +391,7 @@
         ud.clickStart = performance.now();
         ud.startPos.copy(f.position);
         ud.startScale.copy(f.scale);
-        ud.targetPos.set(-5.6,3.2,8);
+        ud.targetPos.set(-6,3.2,8);
         ud.targetScale.set(0.6,0.6,0.6);
         glass.classList.add('visible');
         showGrid(ud.name);
