@@ -33,6 +33,7 @@
       font-family:monospace;
       font-size:16px;
       line-height:16px;
+      font-weight:800;
       color:#ddd;
       white-space:pre;
       pointer-events:none;
@@ -149,7 +150,7 @@
     const asciiChars = " .:-=+*#%@";
     let lastAscii = 0;
     function updateAscii(now){
-      if(now - lastAscii < 500) return;
+      if(now - lastAscii < 83) return;
       lastAscii = now;
       const cols = Math.floor(window.innerWidth/9);
       const rows = Math.floor(window.innerHeight/16);
@@ -161,21 +162,25 @@
       }
       folders.forEach(f=>{
         const v = f.position.clone().project(camera);
-        const cx = Math.round((v.x*0.5+0.5)*cols);
-        const cy = Math.round((-v.y*0.5+0.5)*rows);
+        const px = (v.x*0.5+0.5)*window.innerWidth;
+        const py = (-v.y*0.5+0.5)*window.innerHeight;
+        const cx = Math.round(px/9);
+        const cy = Math.round(py/16);
         let radius = 6;
-        let chars = ['$','€'];
         if(f.userData.hovered){
           radius *= 1.2 + 0.2*Math.sin(performance.now()/500);
-          chars = ['$','€','£','%'];
         }
-        for(let ring=-1; ring<=1; ring++){
-          const r = radius + ring*0.7;
-          for(let a=0;a<Math.PI*2;a+=Math.PI/20){
-            const x = Math.round(cx + r*Math.cos(a));
-            const y = Math.round(cy + r*Math.sin(a));
-            if(x>=0 && x<cols && y>=0 && y<rows){
-              grid[y][x] = chars[Math.floor(Math.random()*chars.length)];
+        const rOut = radius + 1;
+        for(let y=-rOut; y<=rOut; y++){
+          for(let x=-rOut; x<=rOut; x++){
+            const dist = Math.hypot(x,y);
+            const tx = cx + x, ty = cy + y;
+            if(tx>=0 && tx<cols && ty>=0 && ty<rows){
+              if(dist <= radius-0.5){
+                grid[ty][tx] = '€';
+              } else if(dist <= rOut){
+                grid[ty][tx] = '$';
+              }
             }
           }
         }
@@ -274,7 +279,7 @@
       const f = createFolder(name); scene.add(f); folders.push(f);
       const lbl = document.createElement('div');
       lbl.className = 'label';
-      lbl.textContent = name;
+      lbl.textContent = name.toUpperCase();
       labelsContainer.appendChild(lbl);
       labels.push(lbl);
     });
@@ -294,8 +299,8 @@
     let currentFolder=null, key='', items=[]; let offsetX=0, offsetY=0; let lastLayout=null;
     function applyTransform(){
       const {step} = getSizes();
-      gridContainer.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY - step*2}px))`;
-      gridContainer.style.setProperty('--extra-bg', (step*4)+'px');
+      gridContainer.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
+      gridContainer.style.setProperty('--extra-bg', '0px');
     }
     function render(){ const {size,step}=getSizes(); gridContainer.querySelectorAll('.placed').forEach(el=>el.remove()); items.forEach((item,i)=>{
         const col=Math.min(Math.max(0,item.col),cols-item.cols); const row=Math.min(Math.max(0,item.row),rows-item.rows);
@@ -557,7 +562,7 @@
         const x = (v.x * 0.5 + 0.5) * window.innerWidth;
         const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
         lbl.style.left = `${x}px`;
-        lbl.style.top = `${y + 20}px`;
+        lbl.style.top = `${y + 10}px`;
       });
       updateAscii(now);
     }
