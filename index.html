@@ -12,14 +12,17 @@
       position:fixed;
       top:0; left:0; right:0; bottom:0;
       width:100vw; height:100vh;
+      margin:0;
       font-family:monospace;
       font-size:12px;
       line-height:12px;
       color:#ccc;
       background:#f0f0f0;
       white-space:pre;
+      overflow:hidden;
       pointer-events:none;
       z-index:0;
+      text-rendering:optimizeSpeed;
     }
     #logo {
       position:fixed;
@@ -42,7 +45,8 @@
     #bgCanvas, #fgCanvas { position:absolute; top:0; left:0; width:100%; height:100%; }
     #bgCanvas { z-index:1; }
     #fgCanvas { z-index:3; pointer-events:none; }
-    #labels { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:4; }
+    #labels { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:4; transition:opacity 0.5s ease; }
+    #labels.fade-out { opacity:0; }
     /* Grid overlay was removed in this version */
     .folder-label {
       position:absolute;
@@ -110,6 +114,7 @@
     }
     logoTick();
 
+    let hoverName = null;
     function resizeAscii(){
       const cols = Math.ceil(window.innerWidth/10)+2;
       const rows = Math.ceil(window.innerHeight/12)+2;
@@ -123,7 +128,13 @@
       const chars = " .,:;!+*?#%$@";
       let out="";
       for(let r=0;r<rows;r++){
-        for(let c=0;c<cols;c++) out+=chars[Math.floor(Math.random()*chars.length)];
+        for(let c=0;c<cols;c++){
+          if(hoverName && Math.random()<0.02){
+            out+=hoverName[Math.floor(Math.random()*hoverName.length)];
+          }else{
+            out+=chars[Math.floor(Math.random()*chars.length)];
+          }
+        }
         out+='\n';
       }
       asciiBG.textContent = out;
@@ -389,12 +400,14 @@ const startTime=performance.now();
         ud.startPos.copy(f.position);
         ud.targetPos.set(0, 0, 8);
         glass.classList.add('visible');
+        labelsDiv.classList.add('fade-out');
       } else {
         ud.returning = true;
         ud.returnStart = performance.now();
         ud.returnFrom.copy(f.position);
         ud.returnTo.copy(ud.startPos);
         glass.classList.remove('visible');
+        labelsDiv.classList.remove('fade-out');
       }
     });
 
@@ -424,6 +437,7 @@ const startTime=performance.now();
       else {
         raycaster.setFromCamera(mouse, camera);
         const hoverHits = raycaster.intersectObjects(folders.map(f=>f.userData.front));
+        hoverName = hoverHits[0] ? hoverHits[0].object.parent.userData.name : null;
         const accel = Math.hypot(targetMouse.x-currentMouse.x, targetMouse.y-currentMouse.y);
         folders.forEach(f => { f.userData.hovered = hoverHits.find(h=>h.object===f.userData.front); });
         if(magnetized && accel>2) magnetized = null;
