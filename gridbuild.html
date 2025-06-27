@@ -50,7 +50,7 @@
       pointer-events:none;
       z-index:0;
     }
-    #ascii .currency { color:#888; }
+    #ascii .currency { color:#ccc; }
     #ascii .fg { color:#1449ff; }
   </style>
 </head>
@@ -315,7 +315,7 @@
       wrap.addEventListener('mouseup',()=> clearTimeout(wrap._deleteTimer));
       gridContainer.appendChild(wrap);
       makeDraggable(wrap, step, folderSelect.value);
-      attachBitmapToggle(wrap, media);
+      attachBitmapHold(wrap, media);
       if(doSave) saveLayout(folderSelect.value);
     }
 
@@ -350,9 +350,9 @@
       });
     }
 
-    function attachBitmapToggle(wrap, media){
+    function attachBitmapHold(wrap, media){
       if(!(media.tagName==='VIDEO' || media.tagName==='IMG')) return;
-      let timer=null, state=null;
+      let state=null;
       const startBitmap=()=>{
         const canvas=document.createElement('canvas');
         const ctx=canvas.getContext('2d');
@@ -397,9 +397,9 @@
       };
       wrap.addEventListener('mousedown',e=>{
         if(e.button!==0) return;
-        timer=setTimeout(()=>{ if(state) stopBitmap(); else startBitmap(); },2000);
+        startBitmap();
       });
-      document.addEventListener('mouseup',()=>{ clearTimeout(timer); });
+      document.addEventListener('mouseup',stopBitmap);
     }
 
     addTextBtn.addEventListener('click',()=>{
