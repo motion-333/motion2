@@ -45,7 +45,7 @@
       z-index:2;
     }
     #ascii .fg { color:#1449ff; }
-    #ascii .currency { color:#bbb; }
+    #ascii .currency { color: inherit; }
     #vignette {
       position:fixed;
       inset:0;
@@ -224,14 +224,12 @@
         }
       }
       if(nameForAscii){
-        const rep = (nameForAscii + ' ');
-        const pattern = rep.repeat(Math.ceil(cols/rep.length));
-        for(let r=rows-4; r<=rows-3; r++){
-          for(let c=0;c<cols;c++){
-            const ch = pattern[c % pattern.length];
-            if(ch !== ' '){
-              grid[r][c] = `<span class="fg">${ch}</span>`;
-            }
+        const reps = 6;
+        for(let n=0;n<reps;n++){
+          const sx = Math.floor(Math.random()*(cols-nameForAscii.length));
+          const sy = Math.floor(Math.random()*rows);
+          for(let i=0;i<nameForAscii.length && sx+i<cols;i++){
+            grid[sy][sx+i] = `<span class="fg">${nameForAscii[i]}</span>`;
           }
         }
       }
