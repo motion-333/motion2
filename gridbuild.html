@@ -35,27 +35,9 @@
       font-variation-settings:'wght' 400;
     }
     #addTextBtn { width:100%; margin-top:10px; }
-    #ascii {
-      position:fixed;
-      top:-32px;
-      left:0;
-      width:100%;
-      height:calc(100% + 64px);
-      font-family:monospace;
-      font-size:16px;
-      line-height:16px;
-      font-weight:800;
-      color:#ddd;
-      white-space:pre;
-      pointer-events:none;
-      z-index:0;
-    }
-    #ascii .currency { color:#ccc; }
-    #ascii .fg { color:#1449ff; }
   </style>
 </head>
 <body>
-  <pre id="ascii"></pre>
   <div id="sidebar">
     <h3>Select Folder</h3>
     <select id="folderSelect"><option disabled selected>Loading folders...</option></select>
@@ -65,55 +47,6 @@
   </div>
   <div id="gridContainer"><div id="grid"></div></div>
   <script>
-    const asciiEl = document.getElementById('ascii');
-    const asciiChars = " .:-=+*#%@";
-    const messages = ["['[]']'|':[][\\]", "MOTION"];
-    let msgPhase=0,msgIndex=0,msgDelete=false,msgDelay=0,lastType=0,lastAscii=0;
-    function getTypedMessage(now){
-      if(now<msgDelay) return messages[msgPhase].slice(0,msgIndex);
-      if(now-lastType>120){
-        lastType=now;
-        if(!msgDelete){
-          msgIndex++;
-          if(msgIndex>messages[msgPhase].length){
-            msgIndex=messages[msgPhase].length;
-            msgDelete=true;
-            msgDelay=now+800;
-          }
-        }else{
-          msgIndex--;
-          if(msgIndex<0){
-            msgIndex=0;
-            msgDelete=false;
-            msgPhase=(msgPhase+1)%messages.length;
-            msgDelay=now+300;
-          }
-        }
-      }
-      return messages[msgPhase].slice(0,msgIndex);
-    }
-    function updateAscii(now){
-      if(now-lastAscii<50) return;
-      lastAscii=now;
-      const cols=Math.floor(window.innerWidth/9);
-      const rows=Math.floor(window.innerHeight/16)+4;
-      const grid=Array.from({length:rows},()=>Array(cols).fill(' '));
-      for(let r=0;r<rows;r++)
-        for(let c=0;c<cols;c++)
-          grid[r][c]=asciiChars[Math.floor(Math.random()*asciiChars.length)];
-      const msg=getTypedMessage(now);
-      if(msg){
-        const start=Math.max(0,Math.floor((cols-msg.length)/2));
-        for(let i=0;i<msg.length && start+i<cols;i++)
-          grid[2][start+i]=msg[i];
-      }
-      asciiEl.textContent=grid.map(r=>r.join('')).join('\n');
-    }
-    function loopAscii(now){
-      updateAscii(now);
-      requestAnimationFrame(loopAscii);
-    }
-    requestAnimationFrame(loopAscii);
 
     const cols=80, rows=45, gap=1, minCells=8;
     const gridContainer=document.getElementById('gridContainer'), grid=document.getElementById('grid');
@@ -352,7 +285,7 @@
 
     function attachBitmapHold(wrap, media){
       if(!(media.tagName==='VIDEO' || media.tagName==='IMG')) return;
-      let state=null;
+      let timer=null, state=null;
       const startBitmap=()=>{
         const canvas=document.createElement('canvas');
         const ctx=canvas.getContext('2d');
@@ -397,9 +330,9 @@
       };
       wrap.addEventListener('mousedown',e=>{
         if(e.button!==0) return;
-        startBitmap();
+        timer=setTimeout(()=>{ if(state) stopBitmap(); else startBitmap(); },2000);
       });
-      document.addEventListener('mouseup',stopBitmap);
+      ['mouseup','mouseleave'].forEach(ev=>wrap.addEventListener(ev,()=>clearTimeout(timer)));
     }
 
     addTextBtn.addEventListener('click',()=>{

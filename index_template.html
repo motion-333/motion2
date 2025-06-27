@@ -186,7 +186,7 @@
         const v = f.position.clone().project(camera);
         const px = (v.x*0.5+0.5)*window.innerWidth;
         const py = (-v.y*0.5+0.5)*window.innerHeight;
-        const cx = Math.round(px/9) - 5;
+        const cx = Math.round(px/9) - 7;
         const cy = Math.round((py + 16)/16) - 2;
         let radius = 6;
         if(f.userData.hovered){
@@ -195,7 +195,7 @@
         const rOut = radius + 1;
         for(let y=-rOut+1; y<=rOut-1; y++){
           for(let x=-rOut-1; x<=rOut+1; x++){
-            const dist = Math.hypot(x*1.6, y*0.8);
+            const dist = Math.hypot(x*0.56, y);
             const tx = cx + x, ty = cy + y;
             if(tx>=0 && tx<cols && ty>=0 && ty<rows){
               if(dist <= radius-0.5){
@@ -219,10 +219,15 @@
         }
       }
       if(hovered){
-        const name = hovered.userData.name.toUpperCase();
-        const start = Math.max(0, Math.floor((cols - name.length)/2));
-        for(let i=0;i<name.length && start+i<cols;i++){
-          grid[rows-3][start+i] = `<span class="fg">${name[i]}</span>`;
+        const rep = (hovered.userData.name.toUpperCase() + ' ');
+        const pattern = rep.repeat(Math.ceil(cols/rep.length));
+        for(let r=rows-4; r<=rows-3; r++){
+          for(let c=0;c<cols;c++){
+            const ch = pattern[c % pattern.length];
+            if(ch !== ' '){
+              grid[r][c] = `<span class="fg">${ch}</span>`;
+            }
+          }
         }
       }
       ascii.innerHTML = grid.map(row=>row.join('')).join('\n');
@@ -510,18 +515,17 @@ function setupInteractiveText(text){
    function showGrid(name){
      currentFolder = name;
      overlay.classList.add('show');
-     overlay.classList.remove('visible');
-      setTimeout(()=>ascii.classList.add('front'), 200);
-      labelsContainer.classList.add('hidden');
-      setupInteractiveText(name);
-      loadLayout(name);
-      setTimeout(() => overlay.classList.add('visible'), 500);
+     requestAnimationFrame(()=>overlay.classList.add('visible'));
+     ascii.classList.add('front');
+     labelsContainer.classList.add('hidden');
+     setupInteractiveText(name);
+     loadLayout(name);
    }
    function hideGrid(){
      overlay.classList.remove('visible');
      overlay.addEventListener('transitionend', () => overlay.classList.remove('show'), { once: true });
-      setTimeout(()=>ascii.classList.remove('front'), 200);
-      labelsContainer.classList.remove('hidden');
+     ascii.classList.remove('front');
+     labelsContainer.classList.remove('hidden');
    }
 
     // click behavior
