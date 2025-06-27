@@ -303,7 +303,8 @@
           off.width=cols; off.height=rows;
           off.getContext('2d').drawImage(media,0,0,cols,rows);
           const data=off.getContext('2d').getImageData(0,0,cols,rows).data;
-          ctx.clearRect(0,0,canvas.width,canvas.height);
+          ctx.fillStyle='#fff';
+          ctx.fillRect(0,0,canvas.width,canvas.height);
           for(let y=0;y<rows;y++){
             for(let x=0;x<cols;x++){
               const i=(y*cols+x)*4;
