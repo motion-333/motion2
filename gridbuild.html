@@ -50,8 +50,6 @@
       pointer-events:none;
       z-index:0;
     }
-    #ascii .currency { color:#888; }
-    #ascii .fg { color:#1449ff; }
   </style>
 </head>
 <body>
@@ -315,7 +313,6 @@
       wrap.addEventListener('mouseup',()=> clearTimeout(wrap._deleteTimer));
       gridContainer.appendChild(wrap);
       makeDraggable(wrap, step, folderSelect.value);
-      attachBitmapToggle(wrap, media);
       if(doSave) saveLayout(folderSelect.value);
     }
 
@@ -348,58 +345,6 @@
           saveLayout(folder);
         }, { once: true });
       });
-    }
-
-    function attachBitmapToggle(wrap, media){
-      if(!(media.tagName==='VIDEO' || media.tagName==='IMG')) return;
-      let timer=null, state=null;
-      const startBitmap=()=>{
-        const canvas=document.createElement('canvas');
-        const ctx=canvas.getContext('2d');
-        canvas.width=media.videoWidth||media.naturalWidth||wrap.offsetWidth;
-        canvas.height=media.videoHeight||media.naturalHeight||wrap.offsetHeight;
-        canvas.style.width='100%';
-        canvas.style.height='100%';
-        wrap.appendChild(canvas);
-        media.style.display='none';
-        const fps=12,pixelSize=10,maxRadius=pixelSize*0.45;
-        function draw(){
-          const cols=Math.floor(canvas.width/pixelSize);
-          const rows=Math.floor(canvas.height/pixelSize);
-          const off=document.createElement('canvas');
-          off.width=cols; off.height=rows;
-          off.getContext('2d').drawImage(media,0,0,cols,rows);
-          const data=off.getContext('2d').getImageData(0,0,cols,rows).data;
-          ctx.clearRect(0,0,canvas.width,canvas.height);
-          for(let y=0;y<rows;y++){
-            for(let x=0;x<cols;x++){
-              const i=(y*cols+x)*4;
-              const br=(data[i]+data[i+1]+data[i+2])/(3*255);
-              const rad=(1-br)*maxRadius;
-              const cx=x*pixelSize+pixelSize/2;
-              const cy=y*pixelSize+pixelSize/2;
-              ctx.fillStyle='#1449ff';
-              ctx.beginPath();
-              ctx.arc(cx,cy,rad,0,Math.PI*2);
-              ctx.fill();
-            }
-          }
-        }
-        draw();
-        const interval=setInterval(draw,1000/fps);
-        state={canvas,interval};
-      };
-      const stopBitmap=()=>{
-        if(!state) return;
-        clearInterval(state.interval); state.canvas.remove();
-        media.style.display='';
-        state=null;
-      };
-      wrap.addEventListener('mousedown',e=>{
-        if(e.button!==0) return;
-        timer=setTimeout(()=>{ if(state) stopBitmap(); else startBitmap(); },2000);
-      });
-      document.addEventListener('mouseup',()=>{ clearTimeout(timer); });
     }
 
     addTextBtn.addEventListener('click',()=>{
