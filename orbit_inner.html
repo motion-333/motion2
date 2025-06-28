@@ -13,6 +13,10 @@
     html, body { margin:0; padding:0; width:100%; height:100%; background:transparent; overflow:hidden; cursor:default;
       -webkit-mask-image:linear-gradient(to bottom, transparent 0%, black 15%, black 100%);
               mask-image:linear-gradient(to bottom, transparent 0%, black 15%, black 100%); }
+    html.no-mask, body.no-mask {
+      -webkit-mask-image:none;
+              mask-image:none;
+    }
     /* Top bar removed */
     /* Glass overlay */
     .glass { position:fixed; top:0; left:0; width:100vw; height:100vh; backdrop-filter:blur(4px) brightness(0.95); opacity:0; transition:opacity 0.8s ease-in-out; pointer-events:none; z-index:1;
@@ -463,6 +467,8 @@ function setupInteractiveText(text){
     overlay.classList.add('show');
     requestAnimationFrame(()=>overlay.classList.add('visible'));
     labelsContainer.classList.add('hidden');
+    document.documentElement.classList.add('no-mask');
+    document.body.classList.add('no-mask');
     setupInteractiveText(name);
     loadLayout(name);
     const r = layoutWrapper.getBoundingClientRect();
@@ -472,6 +478,8 @@ function setupInteractiveText(text){
     overlay.classList.remove('visible');
     overlay.addEventListener('transitionend', () => overlay.classList.remove('show'), { once: true });
     labelsContainer.classList.remove('hidden');
+    document.documentElement.classList.remove('no-mask');
+    document.body.classList.remove('no-mask');
     selectedName = null;
     parent.postMessage({ topoColor: '#ffffff', fade:true, maskRect:null }, '*');
   }
