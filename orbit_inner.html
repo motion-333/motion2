@@ -23,7 +23,7 @@
     #labels { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:4; font-family:'Ferrite',sans-serif; opacity:1; transition:opacity 0.5s; }
     #labels.hidden { opacity:0; }
     .label { position:absolute; transform:translate(-50%,0); color:#1449ff; font-size:14px; text-shadow:0 0 4px #fff; font-variation-settings:'wght' 700; }
-    }
+    #sceneWrap { position:fixed; inset:0; }
     #vignette {
       position:fixed;
       inset:0;
@@ -36,11 +36,7 @@
       animation:breathe 6s ease-in-out infinite alternate;
       z-index:0;
     }
-    #vignette,
-    #glass,
-    #bgCanvas,
-    #fgCanvas,
-    #labels {
+    #sceneWrap.masked {
       -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 15%, #000 100%);
               mask-image: linear-gradient(to bottom, transparent 0%, #000 15%, #000 100%);
     }
@@ -112,11 +108,13 @@
 </head>
 <body>
   <!-- top bar removed -->
-  <div id="vignette"></div>
-  <div class="glass" id="glass"></div>
-  <canvas id="bgCanvas"></canvas>
-  <canvas id="fgCanvas"></canvas>
-  <div id="labels"></div>
+  <div id="sceneWrap" class="masked">
+    <div id="vignette"></div>
+    <div class="glass" id="glass"></div>
+    <canvas id="bgCanvas"></canvas>
+    <canvas id="fgCanvas"></canvas>
+    <div id="labels"></div>
+  </div>
   <div id="overlay">
     <div id="layoutWrapper">
       <div id="header">
@@ -134,6 +132,7 @@
   </script>
   <script>
     // Renderer & scene setup
+    const sceneWrap = document.getElementById('sceneWrap');
     const bgCanvas = document.getElementById('bgCanvas'), fgCanvas = document.getElementById('fgCanvas'), glass = document.getElementById('glass');
     // logo removed
 
@@ -455,6 +454,7 @@ function setupInteractiveText(text){
     labelsContainer.classList.add('hidden');
     setupInteractiveText(name);
     loadLayout(name);
+    sceneWrap.classList.remove('masked');
     parent.postMessage({ topoColor: '#1449ff', fade: true, gridOpen: true }, '*');
   }
   function hideGrid(){
@@ -462,6 +462,7 @@ function setupInteractiveText(text){
     overlay.addEventListener('transitionend', () => overlay.classList.remove('show'), { once: true });
     labelsContainer.classList.remove('hidden');
     selectedName = null;
+    sceneWrap.classList.add('masked');
     parent.postMessage({ topoColor: '#ffffff', fade: true, gridOpen: false }, '*');
   }
 
