@@ -356,7 +356,7 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('message', e => {
     if (e.source === orbitFrame.contentWindow && e.data) {
       if (e.data.topoColor && bgFrame && bgFrame.contentWindow) {
-        bgFrame.contentWindow.postMessage({ color: e.data.topoColor, fade: e.data.fade }, '*');
+        bgFrame.contentWindow.postMessage({ color: e.data.topoColor, bgColor: e.data.bgColor, fade: e.data.fade }, '*');
       }
       if (typeof e.data.lockScroll === 'boolean') {
         if (e.data.lockScroll) lockScroll();

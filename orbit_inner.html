@@ -147,6 +147,7 @@
       fgRenderer.setSize(window.innerWidth, window.innerHeight);
       camera.aspect = window.innerWidth/window.innerHeight;
       camera.updateProjectionMatrix();
+      render();
     });
     bgRenderer.setSize(window.innerWidth, window.innerHeight);
     fgRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -260,17 +261,38 @@
       gridContainer.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
       gridContainer.style.setProperty('--extra-bg', '0px');
     }
-    function render(){ const {size,step}=getSizes(); gridContainer.querySelectorAll('.placed').forEach(el=>el.remove()); items.forEach((item,i)=>{
-        const col=Math.min(Math.max(0,item.col),cols-item.cols); const row=Math.min(Math.max(0,item.row),rows-item.rows);
-        const w=item.cols*size+(item.cols-1)*gap; const h=item.rows*size+(item.rows-1)*gap;
-        const wrap=document.createElement('div'); wrap.className='placed'; wrap.style.zIndex=i+1; wrap.style.left=`${col*step}px`; wrap.style.top=`${row*step}px`; wrap.style.width=`${w}px`; wrap.style.height=`${h}px`;
+    function render(){
+      const {size,step}=getSizes();
+      gridContainer.querySelectorAll('.placed').forEach(el=>el.remove());
+      items.forEach((item,i)=>{
+        const col=Math.min(Math.max(0,item.col),cols-item.cols);
+        const row=Math.min(Math.max(0,item.row),rows-item.rows);
+        const w=item.cols*size+(item.cols-1)*gap;
+        const h=item.rows*size+(item.rows-1)*gap;
+        const wrap=document.createElement('div');
+        wrap.className='placed';
+        wrap.style.zIndex=i+1;
+        wrap.style.left=`${col*step}px`;
+        wrap.style.top=`${row*step}px`;
+        wrap.style.width=`${w}px`;
+        wrap.style.height=`${h}px`;
         let media;
         if(item.type==='text'){
           media=document.createElement('div');
           media.className='text-item';
           media.textContent=item.text||'';
-          const upd=s=>{const {size:sz}=getSizes(); media.style.fontSize=`${sz*s}px`; media.style.lineHeight=`${sz*s}px`;};
-          wrap.dataset.fontScale=item.fontScale||1; upd(parseFloat(wrap.dataset.fontScale));
+          wrap.dataset.fontScale=item.fontScale||1;
+          wrap.dataset.fontWeight=item.fontWeight||400;
+          const upd=()=>{
+            const {size:sz}=getSizes();
+            const scale=parseFloat(wrap.dataset.fontScale);
+            const wght=parseInt(wrap.dataset.fontWeight);
+            media.style.fontSize=`${sz*scale}px`;
+            media.style.lineHeight=`${sz*scale}px`;
+            media.style.fontVariationSettings=`'wght' ${wght}`;
+          };
+          upd();
+          window.addEventListener('resize', upd);
         } else {
           const tag=/(mp4|webm)$/i.test(item.src)?'video':'img';
           media=document.createElement(tag);
@@ -282,7 +304,8 @@
         wrap.appendChild(media);
         gridContainer.appendChild(wrap);
         if(item.type!=='text') attachBitmapHold(wrap, media);
-      }); }
+      });
+    }
     function loadLayout(name){ key=`layout_${name}`; const raw=localStorage.getItem(key); items=raw?JSON.parse(raw):[]; lastLayout=raw; render(); }
     let panDirX=0, panDirY=0, panVX=0, panVY=0;
     const margin=120;
@@ -434,14 +457,14 @@ function setupInteractiveText(text){
     labelsContainer.classList.add('hidden');
     setupInteractiveText(name);
     loadLayout(name);
-    parent.postMessage({ topoColor: '#1449ff', fade:true }, '*');
+    parent.postMessage({ topoColor: '#1449ff', bgColor: '#1449ff', fade:true }, '*');
   }
   function hideGrid(){
     overlay.classList.remove('visible');
     overlay.addEventListener('transitionend', () => overlay.classList.remove('show'), { once: true });
     labelsContainer.classList.remove('hidden');
     selectedName = null;
-    parent.postMessage({ topoColor: '#ffffff', fade:true }, '*');
+    parent.postMessage({ topoColor: '#ffffff', bgColor: '#faf8e5', fade:true }, '*');
   }
 
     // click behavior

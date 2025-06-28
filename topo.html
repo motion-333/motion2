@@ -145,6 +145,23 @@
       requestAnimationFrame(step);
     }
 
+    function fadeBG(target,dur=800){
+      const el = document.getElementById('map');
+      const start = window.getComputedStyle(el).backgroundColor;
+      const s = start.match(/\d+/g).map(Number);
+      const end = hexToRgb(target);
+      const t0 = performance.now();
+      function step(now){
+        let p = Math.min((now-t0)/dur,1);
+        const r=Math.round(s[0]+(end.r-s[0])*p);
+        const g=Math.round(s[1]+(end.g-s[1])*p);
+        const b=Math.round(s[2]+(end.b-s[2])*p);
+        el.style.backgroundColor=`rgb(${r},${g},${b})`;
+        if(p<1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
     function traceLoops(segs){
       const loops = [], edges = new Map();
       segs.forEach(({p1,p2})=>{
@@ -286,6 +303,10 @@
           textures = makeTextures(lineColor);
           drawSlice(isFinite(lastDrawY) ? lastDrawY : 0);
         }
+      }
+      if (e.data && e.data.bgColor) {
+        if (e.data.fade) fadeBG(e.data.bgColor);
+        else document.getElementById('map').style.backgroundColor = e.data.bgColor;
       }
     });
 
