@@ -646,6 +646,9 @@ function setupInteractiveText(text){
         closeActive();
       }
     });
+
+    // request folder list from parent on load
+    parent.postMessage({ requestFolders: true }, '*');
   </script>
 </body>
 </html>

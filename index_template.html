@@ -618,11 +618,20 @@ document.addEventListener('DOMContentLoaded', () => {
 <script>
   window.FOLDER_NAMES = {{FOLDERS}};
   const iframe = document.querySelector('iframe[src="orbit_inner.html"]');
-  if (iframe) {
-    iframe.addEventListener('load', () => {
+
+  function sendFolders() {
+    if (iframe && iframe.contentWindow) {
       iframe.contentWindow.postMessage({ folders: window.FOLDER_NAMES }, '*');
-    });
+    }
   }
+
+  if (iframe) iframe.addEventListener('load', sendFolders);
+
+  window.addEventListener('message', e => {
+    if (e.source === iframe.contentWindow && e.data && e.data.requestFolders) {
+      sendFolders();
+    }
+  });
 </script>
 </body>
 </html>
