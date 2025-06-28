@@ -335,21 +335,6 @@
     panStep();
     window.addEventListener('storage',e=>{ if(e.key===key){ items=e.newValue?JSON.parse(e.newValue):[]; render(); }});
     setInterval(()=>{ const cur=localStorage.getItem(key); if(cur!==lastLayout){ lastLayout=cur; items=cur?JSON.parse(cur):[]; render(); } },1000);
-function setupInteractiveText(text){
-      const C = document.querySelector('#rightBox .interactive-text');
-      if(!C) return;
-      const hoverScale=1.8, neighborScale=1.2,
-            normalWght=400, neighborWght=600, hoverWght=900;
-      C.textContent = '';
-      for(const ch of (text||'').trim()){
-        const out=document.createElement('span');
-        out.className='letter';
-        const inn=document.createElement('span');
-        inn.className='char';
-        inn.textContent=ch;
-        out.appendChild(inn);
-        C.appendChild(out);
-}
 
     function attachBitmapHold(wrap, media){
       if(!(media.tagName==='VIDEO' || media.tagName==='IMG')) return;
@@ -403,6 +388,23 @@ function setupInteractiveText(text){
       });
       ['mouseup','mouseleave'].forEach(ev=>wrap.addEventListener(ev,()=>clearTimeout(timer)));
     }
+
+function setupInteractiveText(text){
+      const C = document.querySelector('#rightBox .interactive-text');
+      if(!C) return;
+      const hoverScale=1.8, neighborScale=1.2,
+            normalWght=400, neighborWght=600, hoverWght=900;
+      C.textContent = '';
+      for(const ch of (text||'').trim()){
+        const out=document.createElement('span');
+        out.className='letter';
+        const inn=document.createElement('span');
+        inn.className='char';
+        inn.textContent=ch;
+        out.appendChild(inn);
+        C.appendChild(out);
+}
+
       const letters=Array.from(C.children);
       let baseWidths=[], scaled=[], sumBase=0, totalW=0;
       requestAnimationFrame(()=>{
