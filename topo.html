@@ -27,11 +27,19 @@
       will-change: transform;
       background: #faf8e5;
     }
+    #topFade {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(to bottom, #ffffff 0%, rgba(255,255,255,0) 15%, rgba(255,255,255,0) 100%);
+      mix-blend-mode: lighten;
+    }
   </style>
 </head>
 <body>
   <div id="scroll-area">
     <canvas id="map"></canvas>
+    <div id="topFade"></div>
   </div>
 
   <script>

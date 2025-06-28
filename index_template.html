@@ -84,6 +84,7 @@
       /* start off-screen & invisible */
       opacity: 0;
       transform: translateY(-150vh);
+      color: #1449ff;
     }
 
     .folder-icon:first-child { margin-left: 0; }
@@ -219,7 +220,7 @@
       cursor: pointer;
       background: transparent;
       z-index: 2;
-      transition: transform 0.8s cubic-bezier(.33,1,.68,1);
+      transition: transform 4s cubic-bezier(.33,1,.68,1);
     }
     @keyframes dropIn {
       0% {
@@ -329,12 +330,23 @@ document.addEventListener('DOMContentLoaded', () => {
       scrollArrow.style.transform = 'rotate(0deg)';
     }
   }
+  function smoothScrollTo(target, duration) {
+    const start = window.scrollY;
+    const diff = target - start;
+    const t0 = performance.now();
+    function step(now) {
+      const p = Math.min((now - t0) / duration, 1);
+      window.scrollTo(0, start + diff * p);
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
   scrollArrow.addEventListener('click', () => {
     if (goTop) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      smoothScrollTo(0, 4000);
       goTop = false;
     } else {
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      smoothScrollTo(document.body.scrollHeight, 4000);
       goTop = true;
     }
   });
