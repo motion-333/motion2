@@ -54,12 +54,5 @@
     "src": "/static/pf/Agora/Screenshot 2025-06-25 at 23.21.03.png",
     "cols": 1627,
     "rows": 495
-  },
-  {
-    "name": "main.mp4",
-    "type": "video",
-    "src": "/static/pf/Agora/main.mp4",
-    "cols": 8,
-    "rows": 8
   }
 ]

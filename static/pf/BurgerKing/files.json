@@ -47,12 +47,5 @@
     "src": "/static/pf/BurgerKing/9.mp4",
     "cols": 8,
     "rows": 8
-  },
-  {
-    "name": "main.mp4",
-    "type": "video",
-    "src": "/static/pf/BurgerKing/main.mp4",
-    "cols": 8,
-    "rows": 8
   }
 ]
