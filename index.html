@@ -23,29 +23,6 @@
     #labels { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:4; font-family:'Ferrite',sans-serif; opacity:1; transition:opacity 0.5s; }
     #labels.hidden { opacity:0; }
     .label { position:absolute; transform:translate(-50%,0); color:#1449ff; font-size:14px; text-shadow:0 0 4px #fff; font-variation-settings:'wght' 700; }
-    /* ASCII background */
-    #ascii {
-      position:fixed;
-      top:-32px;
-      left:0;
-      width:100%;
-      height:calc(100% + 64px);
-      font-family:monospace;
-      font-size:16px;
-      line-height:16px;
-      font-weight:800;
-      color:#eee;
-      white-space:pre;
-      pointer-events:none;
-      z-index:1;
-      transition:color 1s;
-    }
-    #ascii.front {
-      color:#1449ff;
-      z-index:2;
-    }
-    #ascii .fg { color:#1449ff; }
-    #ascii .currency { color: inherit; }
     #vignette {
       position:fixed;
       inset:0;
@@ -127,7 +104,6 @@
 <body>
   <!-- top bar removed -->
   <div id="vignette"></div>
-  <pre id="ascii"></pre>
   <div class="glass" id="glass"></div>
   <canvas id="bgCanvas"></canvas>
   <canvas id="fgCanvas"></canvas>
@@ -147,96 +123,7 @@
   <script>
     const FOLDER_NAMES = ["example1", "example2"];
   </script>
-  <script>
-    const ascii = document.getElementById('ascii');
-    const asciiChars = " .:-=+*#%@";
-    let lastAscii = 0;
-    let selectedName = null;
-    const messages = ["['[]']'|':[][\\]", "MOTION"];
-    let msgPhase = 0, msgIndex = 0, msgDelete = false, msgDelay = 0, lastType = 0;
-    function getTypedMessage(now){
-      if(now < msgDelay) return messages[msgPhase].slice(0, msgIndex);
-      if(now - lastType > 120){
-        lastType = now;
-        if(!msgDelete){
-          msgIndex++;
-          if(msgIndex > messages[msgPhase].length){
-            msgIndex = messages[msgPhase].length;
-            msgDelete = true;
-            msgDelay = now + 800;
-          }
-        } else {
-          msgIndex--;
-          if(msgIndex < 0){
-            msgIndex = 0;
-            msgDelete = false;
-            msgPhase = (msgPhase + 1) % messages.length;
-            msgDelay = now + 300;
-          }
-        }
-      }
-      return messages[msgPhase].slice(0, msgIndex);
-    }
-    function updateAscii(now){
-      if(now - lastAscii < 83) return; // ~12 fps
-      lastAscii = now;
-      const cols = Math.floor(window.innerWidth/9);
-      const rows = Math.floor(window.innerHeight/16) + 2;
-      const grid = Array.from({length:rows},()=>Array(cols).fill('').map(()=>asciiChars[Math.floor(Math.random()*asciiChars.length)]));
-      folders.forEach(f=>{
-        const v = f.position.clone().project(camera);
-        const px = (v.x*0.5+0.5)*window.innerWidth;
-        const py = (-v.y*0.5+0.5)*window.innerHeight;
-        const cx = Math.round(px/9) - 7;
-        const cy = Math.round((py + 16)/16) - 2;
-        let radius = 6;
-        if(f.userData.hovered){
-          radius *= 1.2 + 0.2*Math.sin(performance.now()/500);
-        }
-        const rOut = radius + 1;
-        const rOut2 = radius + 2;
-        for(let y=-rOut2+1; y<=rOut2-1; y++){
-          for(let x=-rOut2-1; x<=rOut2+1; x++){
-            const dist = Math.hypot(x*0.45, y);
-            const tx = cx + x, ty = cy + y;
-            if(tx>=0 && tx<cols && ty>=0 && ty<rows){
-              if(dist <= radius-0.5){
-                grid[ty][tx] = '<span class="currency">€</span>';
-              } else if(dist <= rOut){
-                grid[ty][tx] = '<span class="currency">$</span>';
-              } else if(dist <= rOut2){
-                grid[ty][tx] = '<span class="currency">£</span>';
-              }
-            }
-          }
-        }
-      });
-      const hovered = folders.find(f=>f.userData.hovered);
-      const nameForAscii = selectedName || (hovered && hovered.userData.name.toUpperCase());
-      // typing effect line
-      const msg = getTypedMessage(now);
-      if(msg){
-        const step = msg.length + 2;
-        for(let start=0; start<cols; start+=step){
-          for(let i=0;i<msg.length && start+i<cols;i++){
-            grid[2][start+i] = `<span class="fg">${msg[i]}</span>`;
-          }
-        }
-      }
-      if(nameForAscii){
-        const reps = 6;
-        for(let n=0;n<reps;n++){
-          const sx = Math.floor(Math.random()*(cols-nameForAscii.length));
-          const sy = Math.floor(Math.random()*rows);
-          for(let i=0;i<nameForAscii.length && sx+i<cols;i++){
-            grid[sy][sx+i] = `<span class="fg">${nameForAscii[i]}</span>`;
-          }
-        }
-      }
-      ascii.innerHTML = grid.map(row=>row.join('')).join('\n');
-    }
-  </script>
-  <script>
+    <script>
     // Renderer & scene setup
     const bgCanvas = document.getElementById('bgCanvas'), fgCanvas = document.getElementById('fgCanvas'), glass = document.getElementById('glass');
     // logo removed
@@ -516,23 +403,19 @@ function setupInteractiveText(text){
         });
       });
     }
-  function showGrid(name){
-    currentFolder = name;
-    selectedName = name.toUpperCase();
-    overlay.classList.add('show');
-    requestAnimationFrame(()=>overlay.classList.add('visible'));
-     ascii.classList.add('front');
-     labelsContainer.classList.add('hidden');
-     setupInteractiveText(name);
-     loadLayout(name);
-   }
-  function hideGrid(){
-    overlay.classList.remove('visible');
-    overlay.addEventListener('transitionend', () => overlay.classList.remove('show'), { once: true });
-    ascii.classList.remove('front');
-    labelsContainer.classList.remove('hidden');
-    selectedName = null;
-  }
+function showGrid(name){
+  currentFolder = name;
+  overlay.classList.add('show');
+  requestAnimationFrame(()=>overlay.classList.add('visible'));
+  labelsContainer.classList.add('hidden');
+  setupInteractiveText(name);
+  loadLayout(name);
+}
+function hideGrid(){
+  overlay.classList.remove('visible');
+  overlay.addEventListener('transitionend', () => overlay.classList.remove('show'), { once: true });
+  labelsContainer.classList.remove('hidden');
+}
 
     // click behavior
     window.addEventListener('click', ()=>{
@@ -687,10 +570,8 @@ function setupInteractiveText(text){
         lbl.style.left = `${x}px`;
         lbl.style.top = `${y + 10}px`;
       });
-      updateAscii(now);
-    }
-    updateAscii(performance.now());
-    animate();
-  </script>
-</body>
+      }
+      animate();
+    </script>
+  </body>
 </html>
