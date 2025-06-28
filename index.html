@@ -293,10 +293,26 @@ document.addEventListener('DOMContentLoaded', () => {
   const bgFrame         = document.getElementById('topo-bg');
   const orbitFrame      = document.querySelector('iframe[src="orbit_inner.html"]');
 
+  let savedScroll = 0;
+  function lockScroll(){
+    savedScroll = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${savedScroll}px`;
+  }
+  function unlockScroll(){
+    document.body.style.position = '';
+    document.body.style.top = '';
+    window.scrollTo(0, savedScroll);
+  }
+
   window.addEventListener('message', e => {
-    if (e.source === orbitFrame.contentWindow && e.data && e.data.topoColor) {
-      if (bgFrame && bgFrame.contentWindow) {
+    if (e.source === orbitFrame.contentWindow && e.data) {
+      if (e.data.topoColor && bgFrame && bgFrame.contentWindow) {
         bgFrame.contentWindow.postMessage({ color: e.data.topoColor }, '*');
+      }
+      if (typeof e.data.lockScroll === 'boolean') {
+        if (e.data.lockScroll) lockScroll();
+        else unlockScroll();
       }
     }
   });

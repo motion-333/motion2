@@ -413,14 +413,14 @@ function setupInteractiveText(text){
      labelsContainer.classList.add('hidden');
      setupInteractiveText(name);
      loadLayout(name);
-     parent.postMessage({ topoColor: '#1449ff' }, '*');
-   }
+     parent.postMessage({ topoColor: '#1449ff', lockScroll: true }, '*');
+  }
   function hideGrid(){
     overlay.classList.remove('visible');
     overlay.addEventListener('transitionend', () => overlay.classList.remove('show'), { once: true });
     labelsContainer.classList.remove('hidden');
     selectedName = null;
-    parent.postMessage({ topoColor: '#ffffff' }, '*');
+    parent.postMessage({ topoColor: '#ffffff', lockScroll: false }, '*');
   }
 
     // click behavior
