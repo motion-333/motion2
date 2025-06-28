@@ -36,6 +36,14 @@
       animation:breathe 6s ease-in-out infinite alternate;
       z-index:0;
     }
+    #vignette,
+    #glass,
+    #bgCanvas,
+    #fgCanvas,
+    #labels {
+      -webkit-mask-image: linear-gradient(to bottom, transparent 0%, #000 15%, #000 100%);
+              mask-image: linear-gradient(to bottom, transparent 0%, #000 15%, #000 100%);
+    }
     @keyframes breathe {
       from { opacity:0.4; }
       to   { opacity:0.8; }
@@ -57,8 +65,8 @@
     #layoutWrapper { display:flex; flex-direction:column; align-items:center; pointer-events:auto; }
     #header { width:calc(120vmin + 6px); display:flex; height:15vmin; margin-bottom:-3px; }
     #viewport { position:relative; overflow:hidden; width:120vmin; height:calc(120vmin*9/16 + 6vmin); border:3px solid #1449ff; pointer-events:auto; }
-    #leftSquare { width:15vmin; height:100%; background:rgba(250,248,229,0.2); box-sizing:border-box; border:3px solid #1449ff; border-right:none; }
-    #rightBox { flex:1; height:100%; overflow:hidden; display:flex; align-items:center; justify-content:center; box-sizing:border-box; border:3px solid #1449ff; border-left:3px solid #1449ff; background:rgba(250,248,229,0.2); }
+    #leftSquare { width:15vmin; height:100%; background:#faf8e5; box-sizing:border-box; border:3px solid #1449ff; border-right:none; }
+    #rightBox { flex:1; height:100%; overflow:hidden; display:flex; align-items:center; justify-content:center; box-sizing:border-box; border:3px solid #1449ff; border-left:3px solid #1449ff; background:#faf8e5; }
     #rightBox .interactive-text {
       display:inline-block;
       width:100%;
@@ -439,14 +447,14 @@ function setupInteractiveText(text){
     labelsContainer.classList.add('hidden');
     setupInteractiveText(name);
     loadLayout(name);
-    parent.postMessage({ topoColor: '#1449ff' }, '*');
+    parent.postMessage({ topoColor: '#1449ff', fade: true }, '*');
   }
   function hideGrid(){
     overlay.classList.remove('visible');
     overlay.addEventListener('transitionend', () => overlay.classList.remove('show'), { once: true });
     labelsContainer.classList.remove('hidden');
     selectedName = null;
-    parent.postMessage({ topoColor: '#ffffff' }, '*');
+    parent.postMessage({ topoColor: '#ffffff', fade: true }, '*');
   }
 
     // click behavior

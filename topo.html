@@ -138,7 +138,7 @@
     function rgbToHex(r,g,b){
       return '#' + [r,g,b].map(x=>x.toString(16).padStart(2,'0')).join('');
     }
-    function fadeToColor(target,dur=800){
+    function fadeToColor(target,dur=1000){
       const start = hexToRgb(lineColor);
       const end   = hexToRgb(target);
       const t0 = performance.now();
@@ -155,7 +155,7 @@
       requestAnimationFrame(step);
     }
 
-    function fadeBG(target,dur=800){
+    function fadeBG(target,dur=1000){
       const el = document.getElementById('map');
       const start = window.getComputedStyle(el).backgroundColor;
       const s = start.match(/\d+/g).map(Number);
