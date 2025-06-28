@@ -393,16 +393,16 @@ function setupInteractiveText(text){
     offsetX = 0;
     offsetY = 0;
     applyTransform();
-    overlay.style.display = 'flex';
-    overlay.style.opacity = '1';
+    overlay.classList.add('show');
+    requestAnimationFrame(()=>overlay.classList.add('visible'));
     labelsContainer.classList.add('hidden');
     setupInteractiveText(name);
     loadLayout(name);
     parent.postMessage({ topoColor: '#1449ff', lockScroll: true }, '*');
   }
   function hideGrid(){
-    overlay.style.opacity = '0';
-    overlay.style.display = 'none';
+    overlay.classList.remove('visible');
+    overlay.addEventListener('transitionend', () => overlay.classList.remove('show'), { once: true });
     labelsContainer.classList.remove('hidden');
     selectedName = null;
     parent.postMessage({ topoColor: '#ffffff', lockScroll: false }, '*');

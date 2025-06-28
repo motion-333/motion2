@@ -318,9 +318,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let goTop = false;
   function updateArrow() {
-    const spins = Math.floor(window.scrollY / window.innerHeight);
-    const base  = goTop ? 180 : 0;
-    scrollArrow.style.transform = `rotate(${base + spins * 360}deg)`;
+    const scrollY = window.scrollY;
+    const bottomThreshold = document.body.scrollHeight - window.innerHeight;
+    const topThreshold = window.innerHeight;
+    if (scrollY >= bottomThreshold && !goTop) {
+      goTop = true;
+      scrollArrow.style.transform = 'rotate(0deg)';
+    } else if (scrollY <= topThreshold && goTop) {
+      goTop = false;
+      scrollArrow.style.transform = 'rotate(180deg)';
+    }
   }
   scrollArrow.addEventListener('click', () => {
     if (goTop) {
@@ -330,7 +337,6 @@ document.addEventListener('DOMContentLoaded', () => {
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
       goTop = true;
     }
-    updateArrow();
   });
   window.addEventListener('scroll', updateArrow);
   updateArrow();
