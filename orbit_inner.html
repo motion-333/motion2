@@ -253,6 +253,7 @@
 
     // grid overlay setup
     const overlay = document.getElementById('overlay');
+    const layoutWrapper = document.getElementById('layoutWrapper');
     const gridContainer=document.getElementById('gridContainer');
     const grid=document.getElementById('grid');
     const viewport=document.getElementById('viewport');
@@ -464,14 +465,15 @@ function setupInteractiveText(text){
     labelsContainer.classList.add('hidden');
     setupInteractiveText(name);
     loadLayout(name);
-    parent.postMessage({ topoColor: '#1449ff', fade:true }, '*');
+    const r = layoutWrapper.getBoundingClientRect();
+    parent.postMessage({ topoColor: '#1449ff', fade:true, maskRect:{left:r.left, top:r.top, width:r.width, height:r.height} }, '*');
   }
   function hideGrid(){
     overlay.classList.remove('visible');
     overlay.addEventListener('transitionend', () => overlay.classList.remove('show'), { once: true });
     labelsContainer.classList.remove('hidden');
     selectedName = null;
-    parent.postMessage({ topoColor: '#ffffff', fade:true }, '*');
+    parent.postMessage({ topoColor: '#ffffff', fade:true, maskRect:null }, '*');
   }
 
     // click behavior

@@ -370,6 +370,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (e.data.topoColor && bgFrame && bgFrame.contentWindow) {
         bgFrame.contentWindow.postMessage({ color: e.data.topoColor, fade: e.data.fade }, '*');
       }
+      if ('maskRect' in e.data && bgFrame && bgFrame.contentWindow) {
+        bgFrame.contentWindow.postMessage({ maskRect: e.data.maskRect }, '*');
+      }
       if (typeof e.data.lockScroll === 'boolean') {
         if (e.data.lockScroll) lockScroll();
         else unlockScroll();

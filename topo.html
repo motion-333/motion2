@@ -27,19 +27,21 @@
       will-change: transform;
       background: #faf8e5;
     }
-    #topFade {
+    #maskRect {
       position: fixed;
-      inset: 0;
       pointer-events: none;
-      background: linear-gradient(to bottom, #ffffff 0%, rgba(255,255,255,0) 15%, rgba(255,255,255,0) 100%);
-      mix-blend-mode: lighten;
+      background: #faf8e5;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      z-index: 1;
     }
   </style>
 </head>
 <body>
   <div id="scroll-area">
     <canvas id="map"></canvas>
-    <div id="topFade"></div>
+    <div id="maskRect"></div>
   </div>
 
   <script>
@@ -315,6 +317,21 @@
       if (e.data && e.data.bgColor) {
         if (e.data.fade) fadeBG(e.data.bgColor);
         else document.getElementById('map').style.backgroundColor = e.data.bgColor;
+      }
+      if (e.data && Object.prototype.hasOwnProperty.call(e.data, 'maskRect')) {
+        const mask = document.getElementById('maskRect');
+        if (e.data.maskRect) {
+          const r = e.data.maskRect;
+          mask.style.left = r.left + 'px';
+          mask.style.top = r.top + 'px';
+          mask.style.width = r.width + 'px';
+          mask.style.height = r.height + 'px';
+          mask.style.display = 'block';
+          requestAnimationFrame(() => mask.style.opacity = '1');
+        } else {
+          mask.style.opacity = '0';
+          mask.addEventListener('transitionend', () => mask.style.display = 'none', { once: true });
+        }
       }
     });
 
