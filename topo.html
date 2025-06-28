@@ -86,35 +86,36 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    function makeTextures(){
+    let lineColor = '#ffffff';
+    function makeTextures(col){
       const patterns = [];
       let c = document.createElement('canvas'), cx;
       // dot
       c.width = c.height = 20; cx = c.getContext('2d');
-      cx.fillStyle = '#ffffff';
+      cx.fillStyle = col;
       [[5,5],[15,15]].forEach(([x,y])=>{ cx.beginPath(); cx.arc(x,y,3,0,2*Math.PI); cx.fill(); });
       patterns.push(ctx.createPattern(c, 'repeat'));
       // slash
       c.width = c.height = 20; cx = c.getContext('2d');
-      cx.strokeStyle = '#ffffff'; cx.lineWidth = 2;
+      cx.strokeStyle = col; cx.lineWidth = 2;
       cx.beginPath(); cx.moveTo(0,20); cx.lineTo(20,0); cx.stroke();
       patterns.push(ctx.createPattern(c, 'repeat'));
       // polka
       c.width = c.height = 30; cx = c.getContext('2d');
-      cx.fillStyle = '#ffffff'; cx.beginPath(); cx.arc(15,15,5,0,2*Math.PI); cx.fill();
+      cx.fillStyle = col; cx.beginPath(); cx.arc(15,15,5,0,2*Math.PI); cx.fill();
       patterns.push(ctx.createPattern(c, 'repeat'));
       // plus
       c.width = c.height = 20; cx = c.getContext('2d');
-      cx.strokeStyle = '#ffffff'; cx.lineWidth = 2;
+      cx.strokeStyle = col; cx.lineWidth = 2;
       cx.beginPath(); cx.moveTo(10,2); cx.lineTo(10,18); cx.moveTo(2,10); cx.lineTo(18,10); cx.stroke();
       patterns.push(ctx.createPattern(c, 'repeat'));
       // dollar
       c.width = c.height = 30; cx = c.getContext('2d');
-      cx.fillStyle = '#ffffff'; cx.font = '20px sans-serif'; cx.fillText('$', 8, 22);
+      cx.fillStyle = col; cx.font = '20px sans-serif'; cx.fillText('$', 8, 22);
       patterns.push(ctx.createPattern(c, 'repeat'));
       return patterns;
     }
-    const textures = makeTextures();
+    let textures = makeTextures(lineColor);
 
     function traceLoops(segs){
       const loops = [], edges = new Map();
@@ -145,7 +146,7 @@
 
       ctx.clearRect(0, 0, W, H);
 
-      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1; ctx.setLineDash([5,5]);
+      ctx.strokeStyle = lineColor; ctx.lineWidth = 1; ctx.setLineDash([5,5]);
       for(let x = 0; x <= W; x += GRID_STEP){
         ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
       }
@@ -208,7 +209,7 @@
           ctx.closePath(); ctx.fill();
         });
 
-        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.beginPath();
+        ctx.strokeStyle = lineColor; ctx.lineWidth = 2; ctx.beginPath();
         const jf = 0.02, ja = 5;
         segs.forEach(s=>{
           const x1 = s.p1.x * DS, y1 = s.p1.y * DS;
@@ -249,6 +250,11 @@
     window.addEventListener('message', e => {
       if (e.data && typeof e.data.scrollY === 'number') {
         handleScrollY(e.data.scrollY);
+      }
+      if (e.data && e.data.color) {
+        lineColor = e.data.color;
+        textures = makeTextures(lineColor);
+        drawSlice(isFinite(lastDrawY) ? lastDrawY : 0);
       }
     });
 

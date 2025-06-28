@@ -13,7 +13,7 @@
     html, body { margin:0; padding:0; width:100%; height:100%; background:transparent; overflow:hidden; cursor:default; }
     /* Top bar removed */
     /* Glass overlay */
-    .glass { position:fixed; top:0; left:0; width:100vw; height:100vh; backdrop-filter:blur(20px) brightness(0.95); opacity:0; transition:opacity 0.8s ease-in-out; pointer-events:none; z-index:1; }
+    .glass { position:fixed; top:0; left:0; width:100vw; height:100vh; backdrop-filter:brightness(0.95); opacity:0; transition:opacity 0.8s ease-in-out; pointer-events:none; z-index:1; }
     .glass.visible { opacity:1; }
     /* Canvas layers */
     #bgCanvas, #fgCanvas { position:absolute; top:0; left:0; width:100%; height:100%; }
@@ -413,12 +413,14 @@ function setupInteractiveText(text){
      labelsContainer.classList.add('hidden');
      setupInteractiveText(name);
      loadLayout(name);
+     parent.postMessage({ topoColor: '#1449ff' }, '*');
    }
   function hideGrid(){
     overlay.classList.remove('visible');
     overlay.addEventListener('transitionend', () => overlay.classList.remove('show'), { once: true });
     labelsContainer.classList.remove('hidden');
     selectedName = null;
+    parent.postMessage({ topoColor: '#ffffff' }, '*');
   }
 
     // click behavior

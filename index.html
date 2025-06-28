@@ -193,7 +193,7 @@
 
 .footer-paragraph {
   position: absolute;
-  top: 200vh;
+  top: 320vh;
   padding: 2vw 10vw;
   font-family: 'Ferrite Display', sans-serif;
   font-size: 2vw;
@@ -291,6 +291,15 @@ document.addEventListener('DOMContentLoaded', () => {
   const descriptionText = document.querySelector('.description-text');
   const icons           = document.querySelectorAll('.folder-icon');
   const bgFrame         = document.getElementById('topo-bg');
+  const orbitFrame      = document.querySelector('iframe[src="orbit_inner.html"]');
+
+  window.addEventListener('message', e => {
+    if (e.source === orbitFrame.contentWindow && e.data && e.data.topoColor) {
+      if (bgFrame && bgFrame.contentWindow) {
+        bgFrame.contentWindow.postMessage({ color: e.data.topoColor }, '*');
+      }
+    }
+  });
 
   // relay scroll position to the background iframe
   let lastSentY = -Infinity;
@@ -493,7 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<img src="/static/me.jpg" style="position:absolute; top:175vh; left:50%; transform:translateX(-50%); width:150px;" alt="Me">
+<img src="/static/me.jpg" style="position:absolute; top:310vh; left:50%; transform:translateX(-50%); width:150px;" alt="Me">
 
 <div class="footer-paragraph">
   Proficient working solo or within a creative team. I’m efficient at developping clean and productive workflows and efficient production systems. Detail-focused, sharp eyed for the micro as well as the full picture. Experience working in difficult spaces, musical environnements and challenging deadlines. Passion for developping unique image treatment media and effects. Strong ability with both sober briefs and maximalist detail-heavy scenes. Capable of further developping client ideas by finding creative solutions to design challenges.
