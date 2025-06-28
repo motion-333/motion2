@@ -575,11 +575,11 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- Embedded folder orbit section -->
 <iframe src="orbit_inner.html" style="position:absolute; top:550vh; width:100%; height:100vh; border:none;"></iframe>
 <script>
-  window.FOLDER_NAMES = ["example1", "example2"];
-  const orbitIframe = document.querySelector('iframe[src="orbit_inner.html"]');
-  if (orbitIframe) {
-    orbitIframe.addEventListener('load', () => {
-      orbitIframe.contentWindow.postMessage({ folders: window.FOLDER_NAMES }, '*');
+  window.FOLDER_NAMES = ["Agora", "BurgerKing", "RedStar", "Tratt"];
+  const iframe = document.querySelector('iframe[src="orbit_inner.html"]');
+  if (iframe) {
+    iframe.addEventListener('load', () => {
+      iframe.contentWindow.postMessage({ folders: window.FOLDER_NAMES }, '*');
     });
   }
 </script>
