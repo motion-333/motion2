@@ -203,6 +203,26 @@
   line-height: 1.6;
   z-index: 0;
 }
+    /* Scroll arrow */
+    #scrollArrow {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 3px solid #1449ff;
+      color: #1449ff;
+      font-size: 24px;
+      cursor: pointer;
+      background: #fff;
+      z-index: 2;
+      transition: transform 0.6s cubic-bezier(.34,1.56,.64,1);
+    }
+    #scrollArrow.up   { transform: rotate(0deg); }
+    #scrollArrow.down { transform: rotate(180deg); }
     @keyframes dropIn {
       0% {
         transform: translateY(-150vh);
@@ -218,6 +238,7 @@
 </head>
 <body>
 <iframe id="topo-bg" src="topo.html" scrolling="no" loading="eager" title="Topographic background"></iframe>
+<div id="scrollArrow" class="down">&#8593;</div>
 <div class="contact-text"></div>
 <div class="interactive-text"></div>
 <div class="description-text"></div>
@@ -292,6 +313,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const icons           = document.querySelectorAll('.folder-icon');
   const bgFrame         = document.getElementById('topo-bg');
   const orbitFrame      = document.querySelector('iframe[src="orbit_inner.html"]');
+  const scrollArrow     = document.getElementById('scrollArrow');
+
+  history.scrollRestoration = 'manual';
+  window.scrollTo(0, 0);
+
+  let goTop = false;
+  scrollArrow.addEventListener('click', () => {
+    if (goTop) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      scrollArrow.classList.remove('up');
+      scrollArrow.classList.add('down');
+      goTop = false;
+    } else {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      scrollArrow.classList.remove('down');
+      scrollArrow.classList.add('up');
+      goTop = true;
+    }
+  });
 
   let savedScroll = 0;
   function lockScroll(){

@@ -24,22 +24,6 @@
     #labels.hidden { opacity:0; }
     .label { position:absolute; transform:translate(-50%,0); color:#1449ff; font-size:14px; text-shadow:0 0 4px #fff; font-variation-settings:'wght' 700; }
     }
-    #vignette {
-      position:fixed;
-      inset:0;
-      pointer-events:none;
-      background:
-        radial-gradient(circle at 30% 30%, rgba(255,255,255,0.6), transparent 60%),
-        radial-gradient(circle at 70% 40%, rgba(255,255,255,0.5), transparent 70%),
-        radial-gradient(circle at 50% 80%, rgba(255,255,255,0.4), transparent 60%);
-      filter: blur(40px);
-      animation:breathe 6s ease-in-out infinite alternate;
-      z-index:0;
-    }
-    @keyframes breathe {
-      from { opacity:0.4; }
-      to   { opacity:0.8; }
-    }
     /* Grid overlay */
     #overlay {
       position:fixed;
@@ -104,7 +88,6 @@
 </head>
 <body>
   <!-- top bar removed -->
-  <div id="vignette"></div>
   <div class="glass" id="glass"></div>
   <canvas id="bgCanvas"></canvas>
   <canvas id="fgCanvas"></canvas>
