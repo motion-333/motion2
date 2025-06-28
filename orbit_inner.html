@@ -64,7 +64,7 @@
       transition:transform 0.3s cubic-bezier(.25,.1,.25,1), font-variation-settings 0.3s cubic-bezier(.25,.1,.25,1);
       font-variation-settings:'wght' 400;
     }
-    #gridContainer { position:absolute; top:50%; left:50%; width:100vw; height:100vh; transform:translate(-50%,-50%); background:#faf8e5; }
+    #gridContainer { position:absolute; top:calc(50% + 25vh); left:50%; width:100vw; height:100vh; transform:translate(-50%,-50%); background:#faf8e5; }
     #gridContainer::after { content:""; position:absolute; left:0; right:0; bottom:-var(--extra-bg,0); height:var(--extra-bg,0); background:#faf8e5; pointer-events:none; }
     #grid { display:grid; grid-template-columns:repeat(80,1fr); grid-template-rows:repeat(45,1fr); gap:1px; width:100%; height:100%; }
     .cell { background:none; border:1px solid #1449ff; aspect-ratio:1/1; }

@@ -236,7 +236,7 @@
 </head>
 <body>
 <iframe id="topo-bg" src="topo.html" scrolling="no" loading="eager" title="Topographic background"></iframe>
-<div id="scrollArrow" class="down">&#8593;</div>
+<div id="scrollArrow" class="down">&#8595;</div>
 <div class="contact-text"></div>
 <div class="interactive-text"></div>
 <div class="description-text"></div>
@@ -319,14 +319,14 @@ document.addEventListener('DOMContentLoaded', () => {
   let goTop = false;
   function updateArrow() {
     const scrollY = window.scrollY;
-    const bottomThreshold = document.body.scrollHeight - window.innerHeight;
+    const bottomThreshold = document.body.scrollHeight - 2 * window.innerHeight;
     const topThreshold = window.innerHeight;
-    if (scrollY >= bottomThreshold && !goTop) {
+    if (scrollY >= bottomThreshold) {
       goTop = true;
-      scrollArrow.style.transform = 'rotate(0deg)';
-    } else if (scrollY <= topThreshold && goTop) {
-      goTop = false;
       scrollArrow.style.transform = 'rotate(180deg)';
+    } else if (scrollY <= topThreshold) {
+      goTop = false;
+      scrollArrow.style.transform = 'rotate(0deg)';
     }
   }
   scrollArrow.addEventListener('click', () => {
