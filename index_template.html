@@ -322,6 +322,8 @@ document.addEventListener('DOMContentLoaded', () => {
   window.scrollTo(0, 0);
 
   let goTop = false;
+  let gridOpen = false;
+  let pendingScroll = null;
   function updateArrow() {
     const scrollY = window.scrollY;
     const bottomThreshold = document.body.scrollHeight - 2 * window.innerHeight;
@@ -347,14 +349,31 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   scrollArrow.addEventListener('click', () => {
     if (goTop) {
-      smoothScrollTo(0, 4000);
+      if (gridOpen) {
+        pendingScroll = 0;
+        orbitFrame.contentWindow.postMessage({ closeGrid: true }, '*');
+      } else {
+        smoothScrollTo(0, 4000);
+      }
       goTop = false;
     } else {
       smoothScrollTo(document.body.scrollHeight, 4000);
       goTop = true;
     }
   });
-  window.addEventListener('scroll', updateArrow);
+  function handleScrollClose(){
+    if(!gridOpen) return;
+    const rect = orbitFrame.getBoundingClientRect();
+    if(rect.top > window.innerHeight){
+      orbitFrame.contentWindow.postMessage({ closeGrid: true }, '*');
+    }
+  }
+  function onScroll(){
+    updateArrow();
+    handleScrollClose();
+    sendScroll();
+  }
+  window.addEventListener('scroll', onScroll);
   updateArrow();
 
   let savedScroll = 0;
@@ -377,9 +396,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if ('maskRect' in e.data && bgFrame && bgFrame.contentWindow) {
         bgFrame.contentWindow.postMessage({ maskRect: e.data.maskRect }, '*');
       }
-      if (typeof e.data.lockScroll === 'boolean') {
-        if (e.data.lockScroll) lockScroll();
-        else unlockScroll();
+      if (typeof e.data.gridOpen === 'boolean') {
+        gridOpen = e.data.gridOpen;
+        if (!gridOpen && pendingScroll !== null) {
+          smoothScrollTo(pendingScroll, 4000);
+          pendingScroll = null;
+        }
       }
     }
   });
@@ -395,7 +417,7 @@ document.addEventListener('DOMContentLoaded', () => {
       bgFrame.contentWindow.postMessage({ scrollY: sy }, '*');
     }
   }
-  window.addEventListener('scroll', sendScroll);
+  // scrolling handled in onScroll
   if (bgFrame) bgFrame.addEventListener('load', sendScroll);
 
   // --- CONTACT TEXT TYPING ---

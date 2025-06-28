@@ -130,7 +130,7 @@
   </div>
   <script src="https://unpkg.com/three@0.148.0/build/three.min.js"></script>
   <script>
-    const FOLDER_NAMES = ["Agora", "BurgerKing", "RedStar", "Tratt"];
+    let FOLDER_NAMES = [];
   </script>
   <script>
     // Renderer & scene setup
@@ -217,21 +217,29 @@
       return g;
     }
 
-    // create and add folders
     const folders = [], labels = [];
     const labelsContainer = document.getElementById('labels');
-    FOLDER_NAMES.forEach(name => {
-      const f = createFolder(name); scene.add(f); folders.push(f);
-      const lbl = document.createElement('div');
-      lbl.className = 'label';
-      lbl.textContent = name.toUpperCase();
-      labelsContainer.appendChild(lbl);
-      labels.push(lbl);
-    });
+
+    function initFolders(names) {
+      FOLDER_NAMES = names || FOLDER_NAMES;
+      folders.forEach(f => scene.remove(f));
+      folders.length = 0;
+      labelsContainer.innerHTML = '';
+      labels.length = 0;
+      FOLDER_NAMES.forEach(name => {
+        const f = createFolder(name); scene.add(f); folders.push(f);
+        const lbl = document.createElement('div');
+        lbl.className = 'label';
+        lbl.textContent = name.toUpperCase();
+        labelsContainer.appendChild(lbl);
+        labels.push(lbl);
+      });
+      startTime = performance.now();
+    }
 
     // intro animation timings
     const introDur=3000, scatterDur=2000;
-    const startTime=performance.now();
+    let startTime = performance.now();
 
     // grid overlay setup
     const overlay = document.getElementById('overlay');
@@ -447,14 +455,28 @@ function setupInteractiveText(text){
     labelsContainer.classList.add('hidden');
     setupInteractiveText(name);
     loadLayout(name);
-    parent.postMessage({ topoColor: '#1449ff', fade: true }, '*');
+    parent.postMessage({ topoColor: '#1449ff', fade: true, gridOpen: true }, '*');
   }
   function hideGrid(){
     overlay.classList.remove('visible');
     overlay.addEventListener('transitionend', () => overlay.classList.remove('show'), { once: true });
     labelsContainer.classList.remove('hidden');
     selectedName = null;
-    parent.postMessage({ topoColor: '#ffffff', fade: true }, '*');
+    parent.postMessage({ topoColor: '#ffffff', fade: true, gridOpen: false }, '*');
+  }
+
+  function closeActive(){
+    const f = folders.find(o=>o.userData.focused);
+    if(!f) return;
+    const ud = f.userData;
+    ud.returning = true;
+    ud.returnStart = performance.now();
+    ud.returnFrom.copy(f.position);
+    ud.returnTo.copy(ud.startPos);
+    ud.scaleReturnFrom.copy(f.scale);
+    ud.scaleReturnTo.copy(ud.startScale);
+    glass.classList.remove('visible');
+    hideGrid();
   }
 
     // click behavior
@@ -614,6 +636,15 @@ function setupInteractiveText(text){
       });
     }
     animate();
+
+    window.addEventListener('message', e => {
+      if (e.data && Array.isArray(e.data.folders)) {
+        initFolders(e.data.folders);
+      }
+      if (e.data && e.data.closeGrid) {
+        closeActive();
+      }
+    });
   </script>
 </body>
 </html>
