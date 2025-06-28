@@ -25,7 +25,7 @@
       height:100%;
       display:block;
       font-family:'Ferrite', sans-serif;
-      background:#fff;
+      background:transparent;
       margin:0;
       padding:0;
       white-space:pre-wrap;
@@ -191,6 +191,7 @@
         });
       }else{
         media=document.createElement('div');
+        wrap.style.background = '#faf8e5';
         media.className='text-item';
         media.contentEditable='true';
         media.textContent=src||'';
