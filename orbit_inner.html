@@ -390,6 +390,9 @@ function setupInteractiveText(text){
   function showGrid(name){
     currentFolder = name;
     selectedName = name.toUpperCase();
+    offsetX = 0;
+    offsetY = 0;
+    applyTransform();
     overlay.style.display = 'flex';
     overlay.style.opacity = '1';
     labelsContainer.classList.add('hidden');
@@ -404,6 +407,8 @@ function setupInteractiveText(text){
     selectedName = null;
     parent.postMessage({ topoColor: '#ffffff', lockScroll: false }, '*');
   }
+  // ensure overlay hidden at start
+  hideGrid();
 
     // click behavior
     window.addEventListener('click', ()=>{
