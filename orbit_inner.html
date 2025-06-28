@@ -472,7 +472,7 @@ function setupInteractiveText(text){
     setupInteractiveText(name);
     loadLayout(name);
     const r = layoutWrapper.getBoundingClientRect();
-    parent.postMessage({ topoColor: '#1449ff', fade:true, maskRect:{left:r.left, top:r.top, width:r.width, height:r.height} }, '*');
+    parent.postMessage({ topoColor: '#1449ff', fade:true, maskRect:{left:r.left, top:r.top, width:r.width, height:r.height}, lockScroll:true }, '*');
   }
   function hideGrid(){
     overlay.classList.remove('visible');
@@ -481,7 +481,7 @@ function setupInteractiveText(text){
     document.documentElement.classList.remove('no-mask');
     document.body.classList.remove('no-mask');
     selectedName = null;
-    parent.postMessage({ topoColor: '#ffffff', fade:true, maskRect:null }, '*');
+    parent.postMessage({ topoColor: '#ffffff', fade:true, maskRect:null, lockScroll:false }, '*');
   }
 
     // click behavior
