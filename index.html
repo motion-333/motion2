@@ -239,8 +239,8 @@
       top: 420vh;
       left: 50%;
       transform: translateX(-50%);
-      width: 150px;
-      height: 90px;
+      width: 100vw;
+      height: 50vh;
     }
 
   </style>
@@ -626,7 +626,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function easeInCubic(t){ return t*t*t; }
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(35, container.clientWidth/container.clientHeight, 0.1, 1000);
-  camera.position.set(0,0,3);
+  camera.position.set(0,0,2);
   const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.setPixelRatio(window.devicePixelRatio);

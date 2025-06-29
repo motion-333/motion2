@@ -19,7 +19,7 @@
     #bgCanvas, #fgCanvas { position:absolute; top:0; left:0; width:100%; height:100%; }
     #bgCanvas { z-index:0; }
     /* raise front canvas above overlay */
-    #fgCanvas { z-index:7; pointer-events:none; }
+    #fgCanvas { z-index:10; pointer-events:none; }
     /* Labels */
     #labels { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:6; font-family:'Ferrite',sans-serif; opacity:1; transition:opacity 0.5s; }
     #labels.hidden { opacity:0; }
@@ -54,7 +54,7 @@
       transition:opacity 0.5s ease;
       align-items:center;
       justify-content:center;
-      z-index:5;
+      z-index:4;
       pointer-events:none;
     }
     #overlay.show { display:flex; }
