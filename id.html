@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>3D Cloud-Blend ID with Smooth Ease-In</title>
+  <style>
+    html, body {
+      margin: 0;
+      width: 100vw; height: 100vh;
+      background: #fff;
+      overflow: hidden;
+      display: flex; justify-content: center; align-items: center;
+    }
+    #canvas { width:100%; height:100% }
+  </style>
+</head>
+<body>
+  <div id="canvas"></div>
+
+  <!-- Three.js core -->
+  <script src="https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.min.js"></script>
+
+  <script>
+    // ease-in cubic
+    function easeInCubic(t) {
+      return t * t * t;
+    }
+
+    // — Scene, camera, renderer —
+    const container = document.getElementById('canvas');
+    const scene     = new THREE.Scene();
+    const camera    = new THREE.PerspectiveCamera(35, innerWidth/innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 3);
+    const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(devicePixelRatio);
+    container.appendChild(renderer.domElement);
+
+    // — Diffuse streak lights —
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const spot1 = new THREE.SpotLight(0xffffff, 0.6, 20, Math.PI/2, 1);
+    const spot2 = new THREE.SpotLight(0xffffff, 0.5, 20, Math.PI/2, 1);
+    scene.add(spot1, spot2);
+
+    // — Offscreen mask canvas for cloud alphaMap —
+    const maskSize = 512;
+    const maskCanvas = document.createElement('canvas');
+    maskCanvas.width = maskCanvas.height = maskSize;
+    const maskCtx = maskCanvas.getContext('2d');
+    maskCtx.fillStyle = 'black';
+    maskCtx.fillRect(0, 0, maskSize, maskSize);
+    const maskTexture = new THREE.CanvasTexture(maskCanvas);
+    maskTexture.minFilter = THREE.LinearFilter;
+    maskTexture.magFilter = THREE.LinearFilter;
+
+    // — State for reveal/conceal —
+    let isDown=false, isUp=false;
+    let tDownStart=0, tUpStart=0, prevDown=0, prevUp=0;
+
+    // — Load textures & build cards —
+    const loader = new THREE.TextureLoader();
+    loader.load('/static/ID.png', id1Tex => {
+      loader.load('/static/ID2.png', id2Tex => {
+        const aspect = 1170/700, H=1.4, W=H*aspect;
+        const cornerRadius = W*(63/1170), thickness=0.02;
+
+        // rounded‐rect shape
+        function roundRect(w,h,r){
+          const x0=-w/2,y0=-h/2,x1=w/2,y1=h/2,s=new THREE.Shape();
+          s.moveTo(x0+r,y0);
+          s.lineTo(x1-r,y0);
+          s.quadraticCurveTo(x1,y0,x1,y0+r);
+          s.lineTo(x1,y1-r);
+          s.quadraticCurveTo(x1,y1,x1-r,y1);
+          s.lineTo(x0+r,y1);
+          s.quadraticCurveTo(x0,y1,x0,y1-r);
+          s.lineTo(x0,y0+r);
+          s.quadraticCurveTo(x0,y0,x0+r,y0);
+          return s;
+        }
+        const shape = roundRect(W,H,cornerRadius);
+        const geo = new THREE.ExtrudeGeometry(shape,{ depth:thickness, bevelEnabled:false });
+        geo.center();
+
+        // UV mapping for full‐face texture
+        const pos = geo.attributes.position;
+        const uvs = [];
+        for(let i=0;i<pos.count;i++){
+          const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
+          if(z>0||z<0) uvs.push((x/W)+0.5,(y/H)+0.5);
+          else         uvs.push(0,0);
+        }
+        geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs,2));
+
+        // base ID1 mesh
+        const baseMat = new THREE.MeshPhysicalMaterial({
+          map: id1Tex, clearcoat:1, clearcoatRoughness:0.8,
+          metalness:0, roughness:0.9
+        });
+        const baseCard = new THREE.Mesh(geo, baseMat);
+        scene.add(baseCard);
+
+        // overlay ID2 mesh w/ alphaMap
+        const overlayMat = new THREE.MeshBasicMaterial({
+          map: id2Tex, transparent:true, alphaMap:maskTexture, depthWrite:false
+        });
+        const overlayCard = new THREE.Mesh(geo, overlayMat);
+        overlayCard.position.z = thickness/2 + 0.0001;
+        scene.add(overlayCard);
+
+        // — Mouse events —
+        window.addEventListener('mousedown', ()=>{
+          isDown=true; isUp=false;
+          tDownStart = performance.now();
+          prevDown=0;
+          maskCtx.fillStyle='black';
+          maskCtx.fillRect(0,0,maskSize,maskSize);
+          maskTexture.needsUpdate=true;
+        });
+        window.addEventListener('mouseup', ()=>{
+          if(isDown){
+            isDown=false; isUp=true;
+            tUpStart=performance.now();
+            prevUp=0;
+          }
+        });
+
+        // track cursor
+        const mouse = new THREE.Vector2();
+        window.addEventListener('mousemove', e=>{
+          mouse.x = (e.clientX/innerWidth)*2 - 1;
+          mouse.y = -(e.clientY/innerHeight)*2 + 1;
+        });
+        window.addEventListener('resize', ()=>{
+          camera.aspect = innerWidth/innerHeight;
+          camera.updateProjectionMatrix();
+          renderer.setSize(innerWidth,innerHeight);
+        });
+
+        // — Animate —
+        (function animate(){
+          requestAnimationFrame(animate);
+
+          // tilt + lights
+          baseCard.rotation.x = overlayCard.rotation.x = mouse.y*0.2;
+          baseCard.rotation.y = overlayCard.rotation.y = mouse.x*0.2;
+          spot1.position.set(-mouse.x*10, mouse.y*10, 5);
+          spot1.target.position.copy(baseCard.position);
+          spot2.position.set(mouse.x*10, -mouse.y*10, 5);
+          spot2.target.position.copy(baseCard.position);
+
+          // reveal (ease-in cubic)
+          if(isDown){
+            const t = (performance.now() - tDownStart)/5000;
+            const lin = Math.min(t,1);
+            const prog = easeInCubic(lin);
+            const delta = prog - prevDown;
+            const blobs = Math.ceil(delta * 100); // fewer blobs for smoothness
+            for(let i=0;i<blobs;i++){
+              const x=Math.random()*maskSize;
+              const y=Math.random()*maskSize;
+              const r=(0.05+Math.random()*0.1)*maskSize;
+              const g=maskCtx.createRadialGradient(x,y,r*0.3,x,y,r);
+              g.addColorStop(0,'rgba(255,255,255,1)');
+              g.addColorStop(1,'rgba(255,255,255,0)');
+              maskCtx.fillStyle=g;
+              maskCtx.beginPath();
+              maskCtx.arc(x,y,r,0,2*Math.PI);
+              maskCtx.fill();
+            }
+            prevDown = prog;
+            maskTexture.needsUpdate=true;
+          }
+
+          // conceal (ease-in cubic)
+          if(isUp){
+            const t = (performance.now() - tUpStart)/5000;
+            const lin = Math.min(t,1);
+            const prog = easeInCubic(lin);
+            const delta = prog - prevUp;
+            const blobs = Math.ceil(delta * 100);
+            for(let i=0;i<blobs;i++){
+              const x=Math.random()*maskSize;
+              const y=Math.random()*maskSize;
+              const r=(0.05+Math.random()*0.1)*maskSize;
+              const g=maskCtx.createRadialGradient(x,y,r*0.3,x,y,r);
+              g.addColorStop(0,'rgba(0,0,0,1)');
+              g.addColorStop(1,'rgba(0,0,0,0)');
+              maskCtx.fillStyle=g;
+              maskCtx.beginPath();
+              maskCtx.arc(x,y,r,0,2*Math.PI);
+              maskCtx.fill();
+            }
+            prevUp = prog;
+            maskTexture.needsUpdate=true;
+            if(lin >= 1) isUp=false;
+          }
+
+          renderer.render(scene, camera);
+        })();
+      });
+    });
+  </script>
+</body>
+</html>
