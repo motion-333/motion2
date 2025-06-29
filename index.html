@@ -236,11 +236,11 @@
     /* ID card container */
     #idCard {
       position: absolute;
-      top: 420vh;
+      top: 395vh;
       left: 50%;
       transform: translateX(-50%);
-      width: 100vw;
-      height: 50vh;
+      width: 50vw;
+      height: 25vh;
     }
 
   </style>
@@ -697,8 +697,8 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       (function animate(){
         requestAnimationFrame(animate);
-        baseCard.rotation.x = overlayCard.rotation.x = mouse.y*0.2;
-        baseCard.rotation.y = overlayCard.rotation.y = mouse.x*0.2;
+        baseCard.rotation.x = overlayCard.rotation.x = mouse.y*0.1;
+        baseCard.rotation.y = overlayCard.rotation.y = mouse.x*0.1;
         spot1.position.set(-mouse.x*10, mouse.y*10, 5);
         spot1.target.position.copy(baseCard.position);
         spot2.position.set(mouse.x*10, -mouse.y*10, 5);
