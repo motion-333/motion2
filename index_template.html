@@ -84,6 +84,7 @@
       /* start off-screen & invisible */
       opacity: 0;
       transform: translateY(-150vh);
+      color: #1449ff;
     }
 
     .folder-icon:first-child { margin-left: 0; }
@@ -208,18 +209,18 @@
       position: fixed;
       top: 10px;
       right: 10px;
-      width: 40px;
-      height: 40px;
+      width: 50px;
+      height: 50px;
       display: flex;
       justify-content: center;
       align-items: center;
-      border: 3px solid #1449ff;
+      border: 4px solid #1449ff;
       color: #1449ff;
-      font-size: 24px;
+      font-size: 32px;
       cursor: pointer;
-      background: #faf8e5;
+      background: transparent;
       z-index: 2;
-      transition: transform 0.8s cubic-bezier(.33,1,.68,1);
+      transition: transform 4s cubic-bezier(.33,1,.68,1);
     }
     @keyframes dropIn {
       0% {
@@ -232,11 +233,25 @@
       }
     }
 
+    /* ID card container */
+    #idCard {
+      position: absolute;
+      top: 405vh;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 50vw;
+      height: 100vh;
+    }
+
   </style>
 </head>
 <body>
 <iframe id="topo-bg" src="topo.html" scrolling="no" loading="eager" title="Topographic background"></iframe>
-<div id="scrollArrow" class="down">&#8595;</div>
+<div id="scrollArrow" class="down">
+  <svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
+    <path d="M12 4v16m0 0-6-6m6 6 6-6" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="square" stroke-linejoin="miter"/>
+  </svg>
+</div>
 <div class="contact-text"></div>
 <div class="interactive-text"></div>
 <div class="description-text"></div>
@@ -317,6 +332,8 @@ document.addEventListener('DOMContentLoaded', () => {
   window.scrollTo(0, 0);
 
   let goTop = false;
+  let gridOpen = false;
+  let pendingScroll = null;
   function updateArrow() {
     const scrollY = window.scrollY;
     const bottomThreshold = document.body.scrollHeight - 2 * window.innerHeight;
@@ -329,16 +346,44 @@ document.addEventListener('DOMContentLoaded', () => {
       scrollArrow.style.transform = 'rotate(0deg)';
     }
   }
+  function smoothScrollTo(target, duration) {
+    const start = window.scrollY;
+    const diff = target - start;
+    const t0 = performance.now();
+    function step(now) {
+      const p = Math.min((now - t0) / duration, 1);
+      window.scrollTo(0, start + diff * p);
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
   scrollArrow.addEventListener('click', () => {
     if (goTop) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (gridOpen) {
+        pendingScroll = 0;
+        orbitFrame.contentWindow.postMessage({ closeGrid: true }, '*');
+      } else {
+        smoothScrollTo(0, 4000);
+      }
       goTop = false;
     } else {
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      smoothScrollTo(document.body.scrollHeight, 4000);
       goTop = true;
     }
   });
-  window.addEventListener('scroll', updateArrow);
+  function handleScrollClose(){
+    if(!gridOpen) return;
+    const rect = orbitFrame.getBoundingClientRect();
+    if(rect.top > window.innerHeight){
+      orbitFrame.contentWindow.postMessage({ closeGrid: true }, '*');
+    }
+  }
+  function onScroll(){
+    updateArrow();
+    handleScrollClose();
+    sendScroll();
+  }
+  window.addEventListener('scroll', onScroll);
   updateArrow();
 
   let savedScroll = 0;
@@ -356,11 +401,17 @@ document.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('message', e => {
     if (e.source === orbitFrame.contentWindow && e.data) {
       if (e.data.topoColor && bgFrame && bgFrame.contentWindow) {
-        bgFrame.contentWindow.postMessage({ color: e.data.topoColor }, '*');
+        bgFrame.contentWindow.postMessage({ color: e.data.topoColor, fade: e.data.fade }, '*');
       }
-      if (typeof e.data.lockScroll === 'boolean') {
-        if (e.data.lockScroll) lockScroll();
-        else unlockScroll();
+      if ('maskRect' in e.data && bgFrame && bgFrame.contentWindow) {
+        bgFrame.contentWindow.postMessage({ maskRect: e.data.maskRect }, '*');
+      }
+      if (typeof e.data.gridOpen === 'boolean') {
+        gridOpen = e.data.gridOpen;
+        if (!gridOpen && pendingScroll !== null) {
+          smoothScrollTo(pendingScroll, 4000);
+          pendingScroll = null;
+        }
       }
     }
   });
@@ -376,7 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
       bgFrame.contentWindow.postMessage({ scrollY: sy }, '*');
     }
   }
-  window.addEventListener('scroll', sendScroll);
+  // scrolling handled in onScroll
   if (bgFrame) bgFrame.addEventListener('load', sendScroll);
 
   // --- CONTACT TEXT TYPING ---
@@ -566,7 +617,141 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
-<img src="/static/me.jpg" style="position:absolute; top:420vh; left:50%; transform:translateX(-50%); width:150px;" alt="Me">
+<div id="idCard"></div>
+<script src="https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('idCard');
+  if (!container) return;
+  function easeInCubic(t){ return t*t*t; }
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(35, container.clientWidth/container.clientHeight, 0.1, 1000);
+  camera.position.set(0,0,2);
+  const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  renderer.setSize(container.clientWidth, container.clientHeight);
+  renderer.setPixelRatio(window.devicePixelRatio);
+  container.appendChild(renderer.domElement);
+  scene.add(new THREE.AmbientLight(0xffffff,0.7));
+  const spot1 = new THREE.SpotLight(0xffffff,0.6,20,Math.PI/2,1);
+  const spot2 = new THREE.SpotLight(0xffffff,0.5,20,Math.PI/2,1);
+  scene.add(spot1,spot2);
+  const maskSize=512;
+  const maskCanvas=document.createElement('canvas');
+  maskCanvas.width=maskCanvas.height=maskSize;
+  const maskCtx=maskCanvas.getContext('2d');
+  maskCtx.fillStyle='black';
+  maskCtx.fillRect(0,0,maskSize,maskSize);
+  const maskTexture=new THREE.CanvasTexture(maskCanvas);
+  maskTexture.minFilter=THREE.LinearFilter;
+  maskTexture.magFilter=THREE.LinearFilter;
+  let isDown=false,isUp=false;
+  let tDownStart=0,tUpStart=0,prevDown=0,prevUp=0;
+  const loader=new THREE.TextureLoader();
+  loader.load('/static/ID.png', id1Tex=>{
+    loader.load('/static/ID2.png', id2Tex=>{
+      const aspect=1170/700,H=1.4,W=H*aspect;
+      const cornerRadius=W*(63/1170), thickness=0.02;
+      function roundRect(w,h,r){
+        const x0=-w/2,y0=-h/2,x1=w/2,y1=h/2,s=new THREE.Shape();
+        s.moveTo(x0+r,y0);
+        s.lineTo(x1-r,y0);
+        s.quadraticCurveTo(x1,y0,x1,y0+r);
+        s.lineTo(x1,y1-r);
+        s.quadraticCurveTo(x1,y1,x1-r,y1);
+        s.lineTo(x0+r,y1);
+        s.quadraticCurveTo(x0,y1,x0,y1-r);
+        s.lineTo(x0,y0+r);
+        s.quadraticCurveTo(x0,y0,x0+r,y0);
+        return s;
+      }
+      const shape=roundRect(W,H,cornerRadius);
+      const geo=new THREE.ExtrudeGeometry(shape,{depth:thickness, bevelEnabled:false});
+      geo.center();
+      const pos=geo.attributes.position;
+      const uvs=[];
+      for(let i=0;i<pos.count;i++){
+        const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
+        if(z>0||z<0) uvs.push((x/W)+0.5,(y/H)+0.5); else uvs.push(0,0);
+      }
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs,2));
+      const baseMat=new THREE.MeshPhysicalMaterial({map:id1Tex, clearcoat:1, clearcoatRoughness:0.8, metalness:0, roughness:0.9});
+      const baseCard=new THREE.Mesh(geo, baseMat);
+      scene.add(baseCard);
+      const overlayMat=new THREE.MeshBasicMaterial({map:id2Tex, transparent:true, alphaMap:maskTexture, depthWrite:false});
+      const overlayCard=new THREE.Mesh(geo, overlayMat);
+      overlayCard.position.z=thickness/2+0.0001;
+      scene.add(overlayCard);
+      window.addEventListener('mousedown',()=>{
+        isDown=true; isUp=false; tDownStart=performance.now(); prevDown=0; maskCtx.fillStyle='black'; maskCtx.fillRect(0,0,maskSize,maskSize); maskTexture.needsUpdate=true;
+      });
+      window.addEventListener('mouseup',()=>{ if(isDown){ isDown=false; isUp=true; tUpStart=performance.now(); prevUp=0; } });
+      const mouse=new THREE.Vector2();
+      window.addEventListener('mousemove',e=>{
+        const rect=container.getBoundingClientRect();
+        mouse.x=((e.clientX-rect.left)/rect.width)*2-1;
+        mouse.y=-((e.clientY-rect.top)/rect.height)*2+1;
+      });
+      window.addEventListener('resize',()=>{
+        const w=container.clientWidth,h=container.clientHeight;
+        camera.aspect=w/h; camera.updateProjectionMatrix(); renderer.setSize(w,h);
+      });
+      (function animate(){
+        requestAnimationFrame(animate);
+        baseCard.rotation.x = overlayCard.rotation.x = mouse.y*0.1;
+        baseCard.rotation.y = overlayCard.rotation.y = mouse.x*0.1;
+        spot1.position.set(-mouse.x*10, mouse.y*10, 5);
+        spot1.target.position.copy(baseCard.position);
+        spot2.position.set(mouse.x*10, -mouse.y*10, 5);
+        spot2.target.position.copy(baseCard.position);
+        if(isDown){
+          const t=(performance.now()-tDownStart)/5000;
+          const lin=Math.min(t,1);
+          const prog=easeInCubic(lin);
+          const delta=prog-prevDown;
+          const blobs=Math.ceil(delta*100);
+          for(let i=0;i<blobs;i++){
+            const x=Math.random()*maskSize;
+            const y=Math.random()*maskSize;
+            const r=(0.05+Math.random()*0.1)*maskSize;
+            const g=maskCtx.createRadialGradient(x,y,r*0.3,x,y,r);
+            g.addColorStop(0,'rgba(255,255,255,1)');
+            g.addColorStop(1,'rgba(255,255,255,0)');
+            maskCtx.fillStyle=g;
+            maskCtx.beginPath();
+            maskCtx.arc(x,y,r,0,2*Math.PI);
+            maskCtx.fill();
+          }
+          prevDown=prog;
+          maskTexture.needsUpdate=true;
+        }
+        if(isUp){
+          const t=(performance.now()-tUpStart)/5000;
+          const lin=Math.min(t,1);
+          const prog=easeInCubic(lin);
+          const delta=prog-prevUp;
+          const blobs=Math.ceil(delta*100);
+          for(let i=0;i<blobs;i++){
+            const x=Math.random()*maskSize;
+            const y=Math.random()*maskSize;
+            const r=(0.05+Math.random()*0.1)*maskSize;
+            const g=maskCtx.createRadialGradient(x,y,r*0.3,x,y,r);
+            g.addColorStop(0,'rgba(0,0,0,1)');
+            g.addColorStop(1,'rgba(0,0,0,0)');
+            maskCtx.fillStyle=g;
+            maskCtx.beginPath();
+            maskCtx.arc(x,y,r,0,2*Math.PI);
+            maskCtx.fill();
+          }
+          prevUp=prog;
+          maskTexture.needsUpdate=true;
+          if(lin>=1) isUp=false;
+        }
+        renderer.render(scene, camera);
+      })();
+    });
+  });
+});
+</script>
 
 <div class="footer-paragraph">
   Proficient working solo or within a creative team. I’m efficient at developping clean and productive workflows and efficient production systems. Detail-focused, sharp eyed for the micro as well as the full picture. Experience working in difficult spaces, musical environnements and challenging deadlines. Passion for developping unique image treatment media and effects. Strong ability with both sober briefs and maximalist detail-heavy scenes. Capable of further developping client ideas by finding creative solutions to design challenges.
@@ -577,11 +762,20 @@ document.addEventListener('DOMContentLoaded', () => {
 <script>
   window.FOLDER_NAMES = {{FOLDERS}};
   const iframe = document.querySelector('iframe[src="orbit_inner.html"]');
-  if (iframe) {
-    iframe.addEventListener('load', () => {
+
+  function sendFolders() {
+    if (iframe && iframe.contentWindow) {
       iframe.contentWindow.postMessage({ folders: window.FOLDER_NAMES }, '*');
-    });
+    }
   }
+
+  if (iframe) iframe.addEventListener('load', sendFolders);
+
+  window.addEventListener('message', e => {
+    if (e.source === iframe.contentWindow && e.data && e.data.requestFolders) {
+      sendFolders();
+    }
+  });
 </script>
 </body>
 </html>
