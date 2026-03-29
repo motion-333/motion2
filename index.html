@@ -1,696 +1,581 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>3D Folder Orbit</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Motion About Page</title>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Flex:opsz,wght@8..144,100..1000&display=swap" rel="stylesheet">
   <style>
     @font-face {
-      font-family: 'Ferrite';
+      font-family: 'Ferrite Display';
       src: url('/static/FERRITEDISPLAYVF.ttf') format('truetype');
-      font-weight: 100 900;
     }
-    html, body { margin:0; padding:0; width:100%; height:100%; background:#fff; overflow:hidden; cursor:default; }
-    /* Top bar removed */
-    /* Glass overlay */
-    .glass { position:fixed; top:0; left:0; width:100vw; height:100vh; backdrop-filter:blur(20px) brightness(0.95); opacity:0; transition:opacity 0.8s ease-in-out; pointer-events:none; z-index:1; }
-    .glass.visible { opacity:1; }
-    /* Canvas layers */
-    #bgCanvas, #fgCanvas { position:absolute; top:0; left:0; width:100%; height:100%; }
-    #bgCanvas { z-index:0; }
-    #fgCanvas { z-index:3; pointer-events:none; }
-    /* Labels */
-    #labels { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:4; font-family:'Ferrite',sans-serif; opacity:1; transition:opacity 0.5s; }
-    #labels.hidden { opacity:0; }
-    .label { position:absolute; transform:translate(-50%,0); color:#1449ff; font-size:14px; text-shadow:0 0 4px #fff; font-variation-settings:'wght' 700; }
-    /* ASCII background */
-    #ascii {
-      position:fixed;
-      top:-32px;
-      left:0;
-      width:100%;
-      height:calc(100% + 64px);
-      font-family:monospace;
-      font-size:16px;
-      line-height:16px;
-      font-weight:800;
-      color:#eee;
-      white-space:pre;
-      pointer-events:none;
-      z-index:1;
-      transition:color 1s;
+    @font-face {
+      font-family: 'Outfit';
+      src: url('/static/OutfitVariableFont.ttf') format('truetype');
     }
-    #ascii.front {
-      color:#1449ff;
-      z-index:2;
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 650vh;
+      background: transparent;
+      font-family: 'Ferrite Display', sans-serif;
+      overflow-x: hidden;
     }
-    #ascii .fg { color:#1449ff; }
-    #ascii .currency { color: inherit; }
-    #vignette {
-      position:fixed;
-      inset:0;
-      pointer-events:none;
-      background:
-        radial-gradient(circle at 30% 30%, rgba(255,255,255,0.6), transparent 60%),
-        radial-gradient(circle at 70% 40%, rgba(255,255,255,0.5), transparent 70%),
-        radial-gradient(circle at 50% 80%, rgba(255,255,255,0.4), transparent 60%);
-      filter: blur(40px);
-      animation:breathe 6s ease-in-out infinite alternate;
-      z-index:0;
+    iframe#topo-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      z-index: -1;
+      pointer-events: none;
     }
-    @keyframes breathe {
-      from { opacity:0.4; }
-      to   { opacity:0.8; }
+    .interactive-text {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 15vw;
+      font-family: 'Roboto Flex', sans-serif;
+      color: #1449ff;
+      white-space: nowrap;
+      width: 80vw;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      pointer-events: auto;
+      transition: opacity 3s ease;
+      box-sizing: border-box;
+      z-index: 0;
+      padding: 0;
     }
-    /* Grid overlay */
-    #overlay {
-      position:fixed;
-      inset:0;
-      display:none;
-      opacity:0;
-      transition:opacity 0.5s ease;
-      align-items:center;
-      justify-content:center;
-      z-index:2;
-      pointer-events:none;
+    .interactive-text .letter {
+      display: inline-block;
+      overflow: hidden;
+      transition: width 0.2s ease;
     }
-    #overlay.show { display:flex; }
-    #overlay.visible { opacity:1; }
-    #layoutWrapper { display:flex; flex-direction:column; align-items:center; pointer-events:auto; }
-    #header { width:calc(120vmin + 6px); display:flex; height:15vmin; margin-bottom:-3px; }
-    #viewport { position:relative; overflow:hidden; width:120vmin; height:calc(120vmin*9/16 + 6vmin); border:3px solid #1449ff; }
-    #leftSquare { width:15vmin; height:100%; background:#fff; box-sizing:border-box; border:3px solid #1449ff; border-right:none; }
-    #rightBox { flex:1; height:100%; overflow:hidden; display:flex; align-items:center; justify-content:center; box-sizing:border-box; border:3px solid #1449ff; border-left:3px solid #1449ff; background:#fff; }
-    #rightBox .interactive-text {
-      display:inline-block;
-      width:100%;
-      white-space:nowrap;
-      overflow:visible;
-      font-family:'Ferrite', sans-serif;
-      font-size:12vmin;
-      color:#1449ff;
-      transform: translateY(4%);
+    .interactive-text .letter .char {
+      display: inline-block;
+      transform-origin: left center;
+      transition: transform 0.2s ease, font-variation-settings 0.2s ease;
+      font-variation-settings: 'wght' 400;
     }
-    #rightBox .interactive-text .letter {
-      display:inline-block;
-      overflow:hidden;
-      transition:width 0.3s cubic-bezier(.25,.1,.25,1);
+    .folders {
+      position: fixed;
+      bottom: -250px;
+      left: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      padding: 0 20px;
+      width: 100vw;
+      height: 100vh;
+      box-sizing: border-box;
+      pointer-events: none;
+      z-index: 1;
     }
-    #rightBox .interactive-text .letter .char {
-      display:inline-block;
-      transform-origin:left center;
-      transition:transform 0.3s cubic-bezier(.25,.1,.25,1), font-variation-settings 0.3s cubic-bezier(.25,.1,.25,1);
-      font-variation-settings:'wght' 400;
+.folder-icon {
+      position: relative;
+      width: 1200px;
+      margin-left: -300px;
+      pointer-events: auto;
+      /* start off-screen & invisible */
+      opacity: 0;
+      transform: translateY(-150vh);
     }
-    #gridContainer { position:absolute; top:50%; left:50%; width:100vw; height:100vh; transform:translate(-50%,-50%); background:#fff; }
-    #gridContainer::after { content:""; position:absolute; left:0; right:0; bottom:-var(--extra-bg,0); height:var(--extra-bg,0); background:#fff; pointer-events:none; }
-    #grid { display:grid; grid-template-columns:repeat(80,1fr); grid-template-rows:repeat(45,1fr); gap:1px; width:100%; height:100%; }
-    .cell { background:none; border:1px solid #1449ff; aspect-ratio:1/1; }
-    .placed { position:absolute; overflow:hidden; border:2px solid #1449ff; box-sizing:border-box; }
-    .placed img, .placed video { width:100%; height:100%; object-fit:cover; pointer-events:none; }
-    .text-item {
-      width:100%;
-      height:100%;
-      display:block;
-      font-family:'Ferrite', sans-serif;
-      background:#fff;
-      margin:0;
-      padding:0;
-      white-space:pre-wrap;
-      box-sizing:border-box;
-      outline:none;
-      font-variation-settings:'wght' 400;
-      color:#1449ff;
+
+    .folder-icon:first-child { margin-left: 0; }
+    .folder-icon svg { width: 100%; height: auto; display: block; }
+    .folder-icon text {
+      font-family: 'Ferrite Display', sans-serif;
+      font-size: 8px;
+      font-weight: bold;
+      fill: #1449ff;
+      text-anchor: start;
+      text-transform: uppercase;
     }
+    .folder-box {
+      position: absolute;
+      top: 80px;
+      left: 40px;
+      width: 85%;
+      max-width: 700px;
+      bottom: 20px;
+      background: transparent;
+      color: #1449ff;
+      padding: 20px 20px 20px 0;
+      font-family: 'Ferrite Display', sans-serif;
+      font-size: 16px;
+      font-weight: bold;
+      line-height: 1.5;
+      text-transform: uppercase;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      align-items: flex-start;
+    }
+.text-wrapper {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80vw;
+  height: auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes pixelateFade {
+  0% {
+    opacity: 1;
+    filter: blur(0px);
+    transform: translate(-50%, -50%) scale(1);
+  }
+  30% {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  70% {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    filter: blur(0px);
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+.interactive-text.pixelate {
+  animation: pixelateFade 1.4s ease-in-out forwards;
+}
+
+.contact-text {
+  position: fixed;
+  top: calc(50% - 9vw);
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 2vw;
+  font-family: 'Ferrite Display', sans-serif;
+  color: #1449ff;
+  user-select: none;
+  cursor: pointer;
+  text-transform: uppercase;
+  z-index: 1;
+  transition: opacity 1.2s ease, filter 1.2s ease;
+  padding: 2vw 3vw;       /* expands hoverable area */
+  margin: -2vw -3vw;      /* compensates for visual layout */
+}
+
+.description-text {
+  position: fixed;
+  top: calc(50% + 9vw); /* slightly under .contact-text */
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 2vw;
+  font-family: 'Ferrite Display', sans-serif;
+  color: #1449ff;
+  text-transform: uppercase;
+  user-select: none;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 1;
+  transition: opacity 1.2s ease, filter 1.2s ease;
+}
+
+.footer-paragraph {
+  position: absolute;
+  top: 450vh;
+  padding: 2vw 10vw;
+  font-family: 'Ferrite Display', sans-serif;
+  font-size: 2vw;
+  color: #1449ff;
+  text-align: center;
+  text-transform: uppercase;
+  line-height: 1.6;
+  z-index: 0;
+}
+    /* Scroll arrow */
+    #scrollArrow {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      width: 40px;
+      height: 40px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border: 3px solid #1449ff;
+      color: #1449ff;
+      font-size: 24px;
+      cursor: pointer;
+      background: #faf8e5;
+      z-index: 2;
+      transition: transform 0.8s cubic-bezier(.33,1,.68,1);
+    }
+    @keyframes dropIn {
+      0% {
+        transform: translateY(-150vh);
+        opacity: 0;
+      }
+      100% {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
   </style>
 </head>
 <body>
-  <!-- top bar removed -->
-  <div id="vignette"></div>
-  <pre id="ascii"></pre>
-  <div class="glass" id="glass"></div>
-  <canvas id="bgCanvas"></canvas>
-  <canvas id="fgCanvas"></canvas>
-  <div id="labels"></div>
-  <div id="overlay">
-    <div id="layoutWrapper">
-      <div id="header">
-        <div id="leftSquare"></div>
-        <div id="rightBox"><div class="interactive-text"></div></div>
+<iframe id="topo-bg" src="topo.html" scrolling="no" loading="eager" title="Topographic background"></iframe>
+<div id="scrollArrow" class="down">&#8593;</div>
+<div class="contact-text"></div>
+<div class="interactive-text"></div>
+<div class="description-text"></div>
+
+<div class="folders">
+    <!-- 1: Graphic Design -->
+    <div class="folder-icon" data-index="0">
+      <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4,14 L4,6 A2,2 0 0 1 6,4 H42 Q44,4 46,6 L52,12 Q54,14 56,14 H92 Q96,14 96,18 V60 Q96,64 92,64 H8 Q4,64 4,60 Z" fill="#faf8e5" stroke="currentColor" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+        <text x="8" y="14">DESIGN</text>
+      </svg>
+      <div class="folder-box">
+        WHETHER IT BE LOGOS OR FULL-ON REBRANDING, OVERLAY ELEMENTS FOR VISUALS OR COMPLETE MOTION DESIGNS, FLYERS OR OUTRIGHT MAGAZINES, I AM ABLE TO PROVIDE THE GRAPHICS THAT REPRESENT YOUR CREATIVE IDEAS.
       </div>
-      <div id="viewport">
-        <div id="gridContainer"><div id="grid"></div></div>
+    </div>
+    <!-- 2: Video -->
+    <div class="folder-icon" data-index="1">
+      <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4,14 L4,6 A2,2 0 0 1 6,4 H42 Q44,4 46,6 L52,12 Q54,14 56,14 H92 Q96,14 96,18 V60 Q96,64 92,64 H8 Q4,64 4,60 Z" fill="#faf8e5" stroke="currentColor" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+        <text x="8" y="14">VIDEO</text>
+      </svg>
+      <div class="folder-box">
+        VERSATILE IN THE PRODUCTION OF A VARIETY OF FORMATS (MUSIC VIDEOS, ADS, EVENTS AND STORES), I’M EFFICIENT AT STRUCTURING SNAPPY AND GRAPHIC VIDEOS SHOWCASING EVERY ANGLE, BOTH MACRO AND PANORAMIC, IMMERSING THE VIEWER IN A CONTROLLED SPACE.
+      </div>
+    </div>
+    <!-- 3: Photo -->
+    <div class="folder-icon" data-index="3">
+      <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4,14 L4,6 A2,2 0 0 1 6,4 H42 Q44,4 46,6 L52,12 Q54,14 56,14 H92 Q96,14 96,18 V60 Q96,64 92,64 H8 Q4,64 4,60 Z" fill="#faf8e5" stroke="currentColor" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+        <text x="8" y="14">PHOTO</text>
+      </svg>
+      <div class="folder-box">
+        CAPTURING AUTHENTIC AND SHARP SCENES IN A VIVID AND RAW STATE, IN SPONTANEOUS OR PREPARED ENVIRONMENTS. MY FOCUS IS ON STAND-OUT DETAIL, WITH AN EYE FOR ELEMENTS WHICH FUNDAMENTALLY COMMUNICATE THE REQUIRED MESSAGE.
+      </div>
+    </div>
+    <!-- 4: Web -->
+    <div class="folder-icon" data-index="2">
+      <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4,14 L4,6 A2,2 0 0 1 6,4 H42 Q44,4 46,6 L52,12 Q54,14 56,14 H92 Q96,14 96,18 V60 Q96,64 92,64 H8 Q4,64 4,60 Z" fill="#faf8e5" stroke="currentColor" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+        <text x="8" y="14">WEB</text>
+      </svg>
+      <div class="folder-box">
+        I AM PROFICIENT AT DEVELOPING INTERACTIVE USER-FRIENDLY INTERFACES, BOTH FRONT-END AND BACK-END, EXPRESSING UNIQUE AND AMBITIOUS CONCEPTS CONCENTRATING ON THE DATA THAT MATTERS MOST.
+      </div>
+    </div>
+    <!-- 5: Socials -->
+    <div class="folder-icon" data-index="4">
+      <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4,14 L4,6 A2,2 0 0 1 6,4 H42 Q44,4 46,6 L52,12 Q54,14 56,14 H92 Q96,14 96,18 V60 Q96,64 92,64 H8 Q4,64 4,60 Z" fill="#faf8e5" stroke="currentColor" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+        <text x="8" y="14">SOCIALS</text>
+      </svg>
+      <div class="folder-box">
+        AFTER HAVING WORKED WITH RESTAURANTS, BANDS, EVENTS AND STORES, I HAVE A DEEP UNDERSTANDING OF CONTENT PRODUCTION, GRASPING THE VIEWER’S ATTENTION AND ALGORITHM MANIPULATION.
+      </div>
+    </div>
+    <!-- 6: Art Dir. -->
+    <div class="folder-icon" data-index="5">
+      <svg viewBox="0 0 100 70" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4,14 L4,6 A2,2 0 0 1 6,4 H42 Q44,4 46,6 L52,12 Q54,14 56,14 H92 Q96,14 96,18 V60 Q96,64 92,64 H8 Q4,64 4,60 Z" fill="#faf8e5" stroke="currentColor" stroke-width="1" stroke-linejoin="round" stroke-linecap="round"/>
+        <text x="8" y="14">ART DIR.</text>
+      </svg>
+      <div class="folder-box">
+        AS A POLYVALENT CREATOR, I CAN ADAPT ALL FORMATS, MEDIUMS AND SKILLS INTO A SINGLE PROJECT. CONSTANTLY DEVELOPING NEW CREATIVE PROCESSES, WITH INSPIRATIONS AND REFERENCES OF A BROAD SPECTRUM, I HAVE A PASSION FOR IMAGE TREATMENT AND EFFECTS, PRESENTING MY WORK IN A SIGNATURE STYLE.
       </div>
     </div>
   </div>
-  <script src="https://unpkg.com/three@0.148.0/build/three.min.js"></script>
-  <script>
-    const FOLDER_NAMES = ["example1", "example2"];
-  </script>
-  <script>
-    const ascii = document.getElementById('ascii');
-    const asciiChars = " .:-=+*#%@";
-    let lastAscii = 0;
-    let selectedName = null;
-    const messages = ["['[]']'|':[][\\]", "MOTION"];
-    let msgPhase = 0, msgIndex = 0, msgDelete = false, msgDelay = 0, lastType = 0;
-    function getTypedMessage(now){
-      if(now < msgDelay) return messages[msgPhase].slice(0, msgIndex);
-      if(now - lastType > 120){
-        lastType = now;
-        if(!msgDelete){
-          msgIndex++;
-          if(msgIndex > messages[msgPhase].length){
-            msgIndex = messages[msgPhase].length;
-            msgDelete = true;
-            msgDelay = now + 800;
-          }
-        } else {
-          msgIndex--;
-          if(msgIndex < 0){
-            msgIndex = 0;
-            msgDelete = false;
-            msgPhase = (msgPhase + 1) % messages.length;
-            msgDelay = now + 300;
-          }
-        }
-      }
-      return messages[msgPhase].slice(0, msgIndex);
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const interactiveText = document.querySelector('.interactive-text');
+  const contactText     = document.querySelector('.contact-text');
+  const descriptionText = document.querySelector('.description-text');
+  const icons           = document.querySelectorAll('.folder-icon');
+  const bgFrame         = document.getElementById('topo-bg');
+  const orbitFrame      = document.querySelector('iframe[src="orbit_inner.html"]');
+  const scrollArrow     = document.getElementById('scrollArrow');
+
+  history.scrollRestoration = 'manual';
+  window.scrollTo(0, 0);
+
+  let goTop = false;
+  function updateArrow() {
+    const spins = Math.floor(window.scrollY / window.innerHeight);
+    const base  = goTop ? 180 : 0;
+    scrollArrow.style.transform = `rotate(${base + spins * 360}deg)`;
+  }
+  scrollArrow.addEventListener('click', () => {
+    if (goTop) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      goTop = false;
+    } else {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+      goTop = true;
     }
-    function updateAscii(now){
-      if(now - lastAscii < 83) return; // ~12 fps
-      lastAscii = now;
-      const cols = Math.floor(window.innerWidth/9);
-      const rows = Math.floor(window.innerHeight/16) + 2;
-      const grid = Array.from({length:rows},()=>Array(cols).fill('').map(()=>asciiChars[Math.floor(Math.random()*asciiChars.length)]));
-      folders.forEach(f=>{
-        const v = f.position.clone().project(camera);
-        const px = (v.x*0.5+0.5)*window.innerWidth;
-        const py = (-v.y*0.5+0.5)*window.innerHeight;
-        const cx = Math.round(px/9) - 7;
-        const cy = Math.round((py + 16)/16) - 2;
-        let radius = 6;
-        if(f.userData.hovered){
-          radius *= 1.2 + 0.2*Math.sin(performance.now()/500);
-        }
-        const rOut = radius + 1;
-        const rOut2 = radius + 2;
-        for(let y=-rOut2+1; y<=rOut2-1; y++){
-          for(let x=-rOut2-1; x<=rOut2+1; x++){
-            const dist = Math.hypot(x*0.45, y);
-            const tx = cx + x, ty = cy + y;
-            if(tx>=0 && tx<cols && ty>=0 && ty<rows){
-              if(dist <= radius-0.5){
-                grid[ty][tx] = '<span class="currency">€</span>';
-              } else if(dist <= rOut){
-                grid[ty][tx] = '<span class="currency">$</span>';
-              } else if(dist <= rOut2){
-                grid[ty][tx] = '<span class="currency">£</span>';
-              }
-            }
-          }
-        }
-      });
-      const hovered = folders.find(f=>f.userData.hovered);
-      const nameForAscii = selectedName || (hovered && hovered.userData.name.toUpperCase());
-      // typing effect line
-      const msg = getTypedMessage(now);
-      if(msg){
-        const step = msg.length + 2;
-        for(let start=0; start<cols; start+=step){
-          for(let i=0;i<msg.length && start+i<cols;i++){
-            grid[2][start+i] = `<span class="fg">${msg[i]}</span>`;
-          }
-        }
-      }
-      if(nameForAscii){
-        const reps = 6;
-        for(let n=0;n<reps;n++){
-          const sx = Math.floor(Math.random()*(cols-nameForAscii.length));
-          const sy = Math.floor(Math.random()*rows);
-          for(let i=0;i<nameForAscii.length && sx+i<cols;i++){
-            grid[sy][sx+i] = `<span class="fg">${nameForAscii[i]}</span>`;
-          }
-        }
-      }
-      ascii.innerHTML = grid.map(row=>row.join('')).join('\n');
-    }
-  </script>
-  <script>
-    // Renderer & scene setup
-    const bgCanvas = document.getElementById('bgCanvas'), fgCanvas = document.getElementById('fgCanvas'), glass = document.getElementById('glass');
-    // logo removed
+    updateArrow();
+  });
+  window.addEventListener('scroll', updateArrow);
+  updateArrow();
 
-    /* top bar scripts removed */
-    const bgRenderer = new THREE.WebGLRenderer({ canvas: bgCanvas, antialias:true, alpha:true });
-    bgRenderer.setClearColor(0x000000, 0);
-    const fgRenderer = new THREE.WebGLRenderer({ canvas: fgCanvas, antialias:true, alpha:true }); fgRenderer.setClearColor(0,0);
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(70, window.innerWidth/window.innerHeight, 0.1, 1000); camera.position.z=16;
-    window.addEventListener('resize', ()=>{
-      bgRenderer.setSize(window.innerWidth, window.innerHeight);
-      fgRenderer.setSize(window.innerWidth, window.innerHeight);
-      camera.aspect = window.innerWidth/window.innerHeight;
-      camera.updateProjectionMatrix();
-    });
-    bgRenderer.setSize(window.innerWidth, window.innerHeight);
-    fgRenderer.setSize(window.innerWidth, window.innerHeight);
-
-    // Lights
-    scene.add(new THREE.AmbientLight(0xffffff, 0.9));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.1);
-    dirLight.position.set(0,0,4);
-    scene.add(dirLight);
-
-    // Raycaster & cursor
-    const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2(), cursor3D = new THREE.Vector3();
-    let targetMouse = {x:0,y:0}, currentMouse = {x:0,y:0}, magnetized = null;
-    window.addEventListener('mousemove', e => {
-      const nx = (e.clientX/window.innerWidth - 0.5)*2;
-      const ny = -(e.clientY/window.innerHeight - 0.5)*2;
-      targetMouse.x = nx; targetMouse.y = ny;
-      mouse.x = (e.clientX/window.innerWidth)*2 - 1;
-      mouse.y = -(e.clientY/window.innerHeight)*2 + 1;
-      raycaster.setFromCamera(mouse, camera);
-      const d = -raycaster.ray.origin.z / raycaster.ray.direction.z;
-      cursor3D.copy(raycaster.ray.origin.clone().add(raycaster.ray.direction.clone().multiplyScalar(d)));
-    });
-
-    const ease = t => t < 0.5 ? 2*t*t : (-1+(4-2*t)*t);
-
-    // Folder factory
-    function createFolder(name) {
-      const g = new THREE.Group();
-      const frontMat = new THREE.MeshStandardMaterial({ color:0x89d8fd, roughness:0.4, metalness:0.2 });
-      const backMat = new THREE.MeshStandardMaterial({ color:0x5bbde9, roughness:0.45, metalness:0.15 });
-      const w=2.5,h=1.8,r=0.15;
-      const shape = new THREE.Shape();
-      shape.moveTo(-w/2+r,-h/2).lineTo(w/2-r,-h/2).quadraticCurveTo(w/2,-h/2,w/2,-h/2+r)
-           .lineTo(w/2,h/2-r).quadraticCurveTo(w/2,h/2,w/2-r,h/2)
-           .lineTo(-w/2+r,h/2).quadraticCurveTo(-w/2,h/2,-w/2,h/2-r)
-           .lineTo(-w/2,-h/2+r).quadraticCurveTo(-w/2,-h/2,-w/2+r,-h/2);
-      const geom = new THREE.ExtrudeGeometry(shape, { depth:0.03, bevelEnabled:true, bevelThickness:0.025, bevelSize:0.025, bevelSegments:2 });
-      const front = new THREE.Mesh(geom, frontMat); front.geometry.translate(0,0.9,0); front.position.z=0.015; front.castShadow=true; g.add(front);
-      const back = new THREE.Mesh(geom.clone(), backMat); back.scale.y=1.07; back.position.set(0,0.05,-0.015); back.receiveShadow=true; g.add(back);
-      g.scale.set(0.9,0.9,0.9);
-      const lipShape = new THREE.Shape();
-      lipShape.moveTo(-1.25,0).quadraticCurveTo(-1.25,0.2,-1.1,0.2).lineTo(-0.6,0.2)
-              .quadraticCurveTo(-0.45,0.2,-0.3,0).lineTo(-0.3,-0.3)
-              .quadraticCurveTo(-0.32,-0.43,-0.6,-0.43).lineTo(-1.22,-0.42)
-              .quadraticCurveTo(-1.28,-0.38,-1.24,-0.3).lineTo(-1.25,0);
-      const lip = new THREE.Mesh(new THREE.ExtrudeGeometry(lipShape, { depth:0.03, bevelEnabled:true, bevelThickness:0.025, bevelSize:0.025, bevelSegments:2 }), backMat);
-      lip.position.set(0,1.9,-0.015); lip.receiveShadow=true; g.add(lip);
-      const dir = new THREE.Vector3((Math.random()-0.5)*2,(Math.random()-0.5)*2,0).normalize();
-      g.userData = {
-        name,
-        front, dir,
-        speed:0.002 + Math.random()*0.001,
-        curvePhase:Math.random()*Math.PI*2,
-        curveScale:0.005 + Math.random()*0.003,
-        focused:false, clickStart:0, startPos:new THREE.Vector3(), targetPos:new THREE.Vector3(), duration:1000,
-        innerR:1.2, hoverPhase:0,
-        returning:false, returnStart:0, returnFrom:new THREE.Vector3(), returnTo:new THREE.Vector3(), returnDuration:1000,
-        spin:false, spinElapsed:0, spinDuration:1,
-        magnetStart:0,
-        startScale:new THREE.Vector3(),
-        targetScale:new THREE.Vector3(),
-        scaleReturnFrom:new THREE.Vector3(),
-        scaleReturnTo:new THREE.Vector3()
-      };
-      return g;
-    }
-
-    // create and add folders
-    const folders = [], labels = [];
-    const labelsContainer = document.getElementById('labels');
-    FOLDER_NAMES.forEach(name => {
-      const f = createFolder(name); scene.add(f); folders.push(f);
-      const lbl = document.createElement('div');
-      lbl.className = 'label';
-      lbl.textContent = name.toUpperCase();
-      labelsContainer.appendChild(lbl);
-      labels.push(lbl);
-    });
-
-    // intro animation
-    const introDur=3000, scatterDur=2000;
-    const startTime=performance.now();
-
-    // grid overlay setup
-    const overlay = document.getElementById('overlay');
-    const gridContainer=document.getElementById('gridContainer');
-    const grid=document.getElementById('grid');
-    const viewport=document.getElementById('viewport');
-    const cols=80, rows=45, gap=1;
-    for(let i=0;i<cols*rows;i++){ const c=document.createElement('div'); c.className='cell'; grid.appendChild(c); }
-    function getSizes(){ const cell=grid.querySelector('.cell'); const rect=cell.getBoundingClientRect(); return {size:rect.width, step:rect.width+gap}; }
-    let currentFolder=null, key='', items=[]; let offsetX=0, offsetY=0; let lastLayout=null;
-    function applyTransform(){
-      const {step} = getSizes();
-      gridContainer.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
-      gridContainer.style.setProperty('--extra-bg', '0px');
-    }
-    function render(){ const {size,step}=getSizes(); gridContainer.querySelectorAll('.placed').forEach(el=>el.remove()); items.forEach((item,i)=>{
-        const col=Math.min(Math.max(0,item.col),cols-item.cols); const row=Math.min(Math.max(0,item.row),rows-item.rows);
-        const w=item.cols*size+(item.cols-1)*gap; const h=item.rows*size+(item.rows-1)*gap;
-        const wrap=document.createElement('div'); wrap.className='placed'; wrap.style.zIndex=i+1; wrap.style.left=`${col*step}px`; wrap.style.top=`${row*step}px`; wrap.style.width=`${w}px`; wrap.style.height=`${h}px`;
-        let media;
-        if(item.type==='text'){
-          media=document.createElement('div');
-          media.className='text-item';
-          media.textContent=item.text||'';
-          const upd=s=>{const {size:sz}=getSizes(); media.style.fontSize=`${sz*s}px`; media.style.lineHeight=`${sz*s}px`;};
-          wrap.dataset.fontScale=item.fontScale||1; upd(parseFloat(wrap.dataset.fontScale));
-        } else {
-          const tag=/(mp4|webm)$/i.test(item.src)?'video':'img';
-          media=document.createElement(tag);
-          if(media.tagName==='VIDEO'){
-            media.controls=false; media.autoplay=true; media.loop=true; media.muted=true; media.playsInline=true;
-          }
-          media.src=item.src;
-        }
-        wrap.appendChild(media);
-        gridContainer.appendChild(wrap);
-        if(item.type!=='text') attachBitmapHold(wrap, media);
-      }); }
-    function loadLayout(name){ key=`layout_${name}`; const raw=localStorage.getItem(key); items=raw?JSON.parse(raw):[]; lastLayout=raw; render(); }
-    let panDirX=0, panDirY=0, panVX=0, panVY=0;
-    const margin=120;
-    viewport.addEventListener('mousemove',e=>{
-      const rect=viewport.getBoundingClientRect();
-      panDirX = (e.clientX-rect.left<margin) ? 1 : (rect.right-e.clientX<margin? -1:0);
-      panDirY = (e.clientY-rect.top<margin) ? 1 : (rect.bottom-e.clientY<margin? -1:0);
-    });
-    function panStep(){
-      const {size,step}=getSizes();
-      const gridW=cols*size+(cols-1)*gap;
-      const gridH=rows*size+(rows-1)*gap;
-      const maxX=Math.max(0,(gridW-viewport.clientWidth)/2 - step*2);
-      const maxY=Math.max(0,(gridH-viewport.clientHeight)/2 - step*2);
-      const accel=step/10;
-      panVX += panDirX*accel;
-      panVY += panDirY*accel;
-      panVX *= 0.85; panVY *= 0.85;
-      offsetX = Math.max(-maxX, Math.min(maxX, offsetX + panVX));
-      offsetY = Math.max(-maxY, Math.min(maxY, offsetY + panVY));
-      applyTransform();
-      requestAnimationFrame(panStep);
-    }
-    panStep();
-    window.addEventListener('storage',e=>{ if(e.key===key){ items=e.newValue?JSON.parse(e.newValue):[]; render(); }});
-    setInterval(()=>{ const cur=localStorage.getItem(key); if(cur!==lastLayout){ lastLayout=cur; items=cur?JSON.parse(cur):[]; render(); } },1000);
-function setupInteractiveText(text){
-      const C = document.querySelector('#rightBox .interactive-text');
-      if(!C) return;
-      const hoverScale=1.8, neighborScale=1.2,
-            normalWght=400, neighborWght=600, hoverWght=900;
-      C.textContent = '';
-      for(const ch of (text||'').trim()){
-        const out=document.createElement('span');
-        out.className='letter';
-        const inn=document.createElement('span');
-        inn.className='char';
-        inn.textContent=ch;
-        out.appendChild(inn);
-        C.appendChild(out);
-}
-
-    function attachBitmapHold(wrap, media){
-      if(!(media.tagName==='VIDEO' || media.tagName==='IMG')) return;
-      let timer=null, state=null;
-      const startBitmap=()=>{
-        const canvas=document.createElement('canvas');
-        const ctx=canvas.getContext('2d');
-        canvas.width=media.videoWidth||media.naturalWidth||wrap.offsetWidth;
-        canvas.height=media.videoHeight||media.naturalHeight||wrap.offsetHeight;
-        canvas.style.width='100%';
-        canvas.style.height='100%';
-        wrap.appendChild(canvas);
-        media.style.display='none';
-        const fps=12,pixelSize=10,maxRadius=pixelSize*0.45;
-        function draw(){
-          const cols=Math.floor(canvas.width/pixelSize);
-          const rows=Math.floor(canvas.height/pixelSize);
-          const off=document.createElement('canvas');
-          off.width=cols; off.height=rows;
-          off.getContext('2d').drawImage(media,0,0,cols,rows);
-          const data=off.getContext('2d').getImageData(0,0,cols,rows).data;
-          ctx.fillStyle='#fff';
-          ctx.fillRect(0,0,canvas.width,canvas.height);
-          for(let y=0;y<rows;y++){
-            for(let x=0;x<cols;x++){
-              const i=(y*cols+x)*4;
-              const br=(data[i]+data[i+1]+data[i+2])/(3*255);
-              const rad=(1-br)*maxRadius;
-              const cx=x*pixelSize+pixelSize/2;
-              const cy=y*pixelSize+pixelSize/2;
-              ctx.fillStyle='#1449ff';
-              ctx.beginPath();
-              ctx.arc(cx,cy,rad,0,Math.PI*2);
-              ctx.fill();
-            }
-          }
-        }
-        draw();
-        const interval=setInterval(draw,1000/fps);
-        state={canvas,interval};
-      };
-      const stopBitmap=()=>{
-        if(!state) return;
-        clearInterval(state.interval); state.canvas.remove();
-        media.style.display='';
-        state=null;
-      };
-      wrap.addEventListener('mousedown',e=>{
-        if(e.button!==0) return;
-        timer=setTimeout(()=>{ if(state) stopBitmap(); else startBitmap(); },2000);
-      });
-      ['mouseup','mouseleave'].forEach(ev=>wrap.addEventListener(ev,()=>clearTimeout(timer)));
-    }
-      const letters=Array.from(C.children);
-      let baseWidths=[], scaled=[], sumBase=0, totalW=0;
-      requestAnimationFrame(()=>{
-        letters.forEach(o=>{
-          const inn=o.firstElementChild;
-          inn.style.transform='scaleX(1)';
-          const w=inn.getBoundingClientRect().width;
-          baseWidths.push(w);
-          sumBase+=w;
-        });
-        totalW=C.getBoundingClientRect().width;
-        const S=totalW/sumBase;
-        scaled=baseWidths.map(w=>w*S);
-        letters.forEach((o,i)=>{
-          const inn=o.firstElementChild;
-          o.style.width=scaled[i]+'px';
-          inn.style.width=baseWidths[i]+'px';
-          inn.style.transform=`scaleX(${S})`;
-          inn.style.fontVariationSettings=`'wght' ${normalWght}`;
-        });
-        letters.forEach((o,i)=>{
-          o.onmouseenter=()=>{
-            const wH=scaled[i];
-            const wN=(i>0?scaled[i-1]:0)+(i<letters.length-1?scaled[i+1]:0);
-            const wO=totalW-wH-wN;
-            const R_h=hoverScale, R_n=neighborScale;
-            const R_o=(totalW-wH*R_h-wN*R_n)/wO;
-            letters.forEach((oo,j)=>{
-              const ch=oo.firstElementChild;
-              let R,wght;
-              if(j===i){R=R_h; wght=hoverWght;}
-              else if(j===i-1||j===i+1){R=R_n; wght=neighborWght;}
-              else {R=R_o; wght=normalWght;}
-              oo.style.width=scaled[j]*R+'px';
-              ch.style.transform=`scaleX(${S*R})`;
-              ch.style.fontVariationSettings=`'wght' ${wght}`;
-            });
-          };
-          o.onmouseleave=()=>{
-            letters.forEach((oo,j)=>{
-              const ch=oo.firstElementChild;
-              oo.style.width=scaled[j]+'px';
-              ch.style.transform=`scaleX(${S})`;
-              ch.style.fontVariationSettings=`'wght' ${normalWght}`;
-            });
-          };
-        });
-      });
-    }
-  function showGrid(name){
-    currentFolder = name;
-    selectedName = name.toUpperCase();
-    overlay.classList.add('show');
-    requestAnimationFrame(()=>overlay.classList.add('visible'));
-     ascii.classList.add('front');
-     labelsContainer.classList.add('hidden');
-     setupInteractiveText(name);
-     loadLayout(name);
-   }
-  function hideGrid(){
-    overlay.classList.remove('visible');
-    overlay.addEventListener('transitionend', () => overlay.classList.remove('show'), { once: true });
-    ascii.classList.remove('front');
-    labelsContainer.classList.remove('hidden');
-    selectedName = null;
+  let savedScroll = 0;
+  function lockScroll(){
+    savedScroll = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${savedScroll}px`;
+  }
+  function unlockScroll(){
+    document.body.style.position = '';
+    document.body.style.top = '';
+    window.scrollTo(0, savedScroll);
   }
 
-    // click behavior
-    window.addEventListener('click', ()=>{
-      raycaster.setFromCamera(mouse, camera);
-      const hits = raycaster.intersectObjects(folders.map(f=>f.userData.front));
-      if(!hits.length) return;
-      const f = hits[0].object.parent, ud = f.userData;
-      if(!ud.focused) {
-        folders.forEach(o=>o.userData.focused=false); // only one active
-        ud.focused = true;
-        ud.clickStart = performance.now();
-        ud.startPos.copy(f.position);
-        ud.startScale.copy(f.scale);
-        ud.targetPos.set(-5.7,3.5,8);
-        ud.targetScale.set(0.6,0.6,0.6);
-        glass.classList.add('visible');
-        showGrid(ud.name);
-      } else {
-        ud.returning = true;
-        ud.returnStart = performance.now();
-        ud.returnFrom.copy(f.position);
-        ud.returnTo.copy(ud.startPos);
-        ud.scaleReturnFrom.copy(f.scale);
-        ud.scaleReturnTo.copy(ud.startScale);
-        glass.classList.remove('visible');
-        hideGrid();
+  window.addEventListener('message', e => {
+    if (e.source === orbitFrame.contentWindow && e.data) {
+      if (e.data.topoColor && bgFrame && bgFrame.contentWindow) {
+        bgFrame.contentWindow.postMessage({ color: e.data.topoColor }, '*');
       }
-    });
-
-    // animation loop
-    function animate(){
-      requestAnimationFrame(animate);
-      const now = performance.now(), dt = now - startTime;
-      const activeFolder = folders.find(f=>f.userData.focused);
-      if(activeFolder){
-        targetMouse.x = 0;
-        targetMouse.y = 0;
+      if (typeof e.data.lockScroll === 'boolean') {
+        if (e.data.lockScroll) lockScroll();
+        else unlockScroll();
       }
-      // intro
-      if(dt < introDur) {
-        const a = (dt/introDur)*Math.PI*2;
-        folders.forEach((f,i)=>{
-          const th = (i/folders.length)*Math.PI*2 + a;
-          f.position.set(Math.cos(th)*5, Math.sin(th)*5, 0);
-        });
-      }
-      // scatter
-      else if(dt < introDur+scatterDur) {
-        const p = (dt-introDur)/scatterDur;
-        folders.forEach((f,i)=>{
-          const ti = Math.max(Math.min(p*folders.length-i,1),0), ei = ease(ti);
-          const th = (i/folders.length)*Math.PI*2;
-          const ctr = new THREE.Vector3(Math.cos(th)*5, Math.sin(th)*5, 0);
-          f.position.copy(ctr.add(f.userData.dir.clone().multiplyScalar(ei*3)));
-        });
-      }
-      // main
-      else {
-        raycaster.setFromCamera(mouse, camera);
-        const hoverHits = raycaster.intersectObjects(folders.map(f=>f.userData.front));
-        folders.forEach(f=>{ f.userData.hovered = hoverHits.some(h=>h.object===f.userData.front); });
-        const accel = Math.hypot(targetMouse.x-currentMouse.x, targetMouse.y-currentMouse.y);
-        if(magnetized && accel>2) magnetized = null;
-        folders.forEach((f,idx)=>{
-          const ud = f.userData;
-          const to = cursor3D.clone().sub(f.position);
-          const d = to.length();
-          if(magnetized===f && now-ud.magnetStart>2000) magnetized=null;
-          if(d<ud.innerR && accel>3 && !ud.spin) { ud.spin=true; ud.spinElapsed=0; }
-          if(ud.spin) {
-            ud.spinElapsed+=0.1;
-            f.rotation.y = (ud.spinElapsed/ud.spinDuration)*Math.PI*2;
-            if(ud.spinElapsed>=ud.spinDuration) { ud.spin=false; f.rotation.y=0; }
-            return;
-          }
-          if((magnetized===null || magnetized===f) && d<ud.innerR && !ud.focused) {
-            magnetized = f;
-            ud.magnetStart = now;
-            const repel = new THREE.Vector3();
-            folders.forEach(o=>{ if(o!==f){ const dv=f.position.clone().sub(o.position); const distSq=dv.lengthSq(); if(distSq<16) repel.add(dv.normalize().multiplyScalar(0.05)); }});
-            f.position.add(repel);
-            const offset=new THREE.Vector3(0,-0.9,0);
-            f.position.lerp(cursor3D.clone().add(offset), 0.05);
-            ud.hoverPhase += 0.1;
-            ud.front.rotation.x += (THREE.MathUtils.degToRad(15) - ud.front.rotation.x)*0.1;
-            const breeze = accel * 0.3;
-            f.rotation.y += (Math.sin(ud.hoverPhase)*breeze - f.rotation.y)*0.2;
-            f.rotation.z += (Math.cos(ud.hoverPhase)*breeze*0.5 - f.rotation.z)*0.2;
-            return;
-          }
-          if(ud.returning){
-            const t = Math.min((now-ud.returnStart)/ud.returnDuration,1);
-            f.position.lerpVectors(ud.returnFrom, ud.returnTo, ease(t));
-            f.scale.lerpVectors(ud.scaleReturnFrom, ud.scaleReturnTo, ease(t));
-            if(t>=1){ ud.returning=false; ud.focused=false; }
-            return;
-          }
-          if(ud.focused){
-            const t = Math.min((now-ud.clickStart)/ud.duration,1);
-            f.position.lerpVectors(ud.startPos, ud.targetPos, ease(t));
-            f.scale.lerpVectors(ud.startScale, ud.targetScale, ease(t));
-            if(t>=1){
-              const bob = Math.sin(now/800)*0.1;
-              f.position.y = ud.targetPos.y + bob;
-            }
-            return;
-          }
-          if(magnetized===f && d>=ud.innerR) magnetized=null;
-          f.rotation.y += (0 - f.rotation.y)*0.2;
-          f.rotation.z += (0 - f.rotation.z)*0.2;
-          if(hoverHits.find(h=>h.object===ud.front)) ud.front.rotation.x += (THREE.MathUtils.degToRad(15) - ud.front.rotation.x)*0.1;
-          else ud.front.rotation.x += (0 - ud.front.rotation.x)*0.1;
-          ud.curvePhase += 0.01;
-          const repel2 = new THREE.Vector3();
-          folders.forEach(o=>{ if(o!==f){ const dv=f.position.clone().sub(o.position); const sq=dv.lengthSq(); if(sq<100) repel2.add(dv.normalize().multiplyScalar(0.08/sq)); }});
-          const curveVec = new THREE.Vector3(
-            Math.sin(ud.curvePhase),
-            Math.sin(ud.curvePhase*0.9),
-            Math.cos(ud.curvePhase*0.8)
-          ).multiplyScalar(ud.curveScale);
-          const cf = new THREE.Vector3();
-          const magR = 5;
-          if(d<magR && d>ud.innerR) cf.add(to.normalize().multiplyScalar((magR-d)/magR*0.02));
-          f.position.add(
-            ud.dir.clone().multiplyScalar(ud.speed)
-              .add(curveVec)
-              .add(repel2)
-              .add(cf)
-          );
-          ['x','y'].forEach(a=>{ if(f.position[a]>5||f.position[a]<-5) ud.dir[a]*=-1; });
-          f.position.z = Math.max(-0.4, Math.min(0.4, f.position.z));
-        });
-      }
-      dirLight.position.x += (targetMouse.x*10 - dirLight.position.x)*0.1;
-      dirLight.position.y += (targetMouse.y*10 - dirLight.position.y)*0.1;
-      const a2 = Math.hypot(targetMouse.x-currentMouse.x, targetMouse.y-currentMouse.y);
-      currentMouse.x += (targetMouse.x-currentMouse.x)*0.02*a2;
-      currentMouse.y += (targetMouse.y-currentMouse.y)*0.02*a2;
-      camera.position.set(currentMouse.x*3,currentMouse.y*3,16);
-      camera.lookAt(0,0,0);
-      bgRenderer.render(scene,camera);
-      const active = folders.find(f=>f.userData.focused);
-      folders.forEach(f=>f.visible = !active || f===active);
-      fgRenderer.render(scene,camera);
-      folders.forEach(f=>f.visible=true);
-      labels.forEach((lbl,i)=>{
-        const f = folders[i];
-        const v = f.position.clone();
-        v.project(camera);
-        const x = (v.x * 0.5 + 0.5) * window.innerWidth;
-        const y = (-v.y * 0.5 + 0.5) * window.innerHeight;
-        lbl.style.left = `${x}px`;
-        lbl.style.top = `${y + 10}px`;
-      });
-      updateAscii(now);
     }
-    updateAscii(performance.now());
-    animate();
-  </script>
+  });
+
+  // relay scroll position to the background iframe
+  let lastSentY = -Infinity;
+  const MESSAGE_STEP = 80;
+  function sendScroll() {
+    const sy = window.scrollY;
+    if (Math.abs(sy - lastSentY) < MESSAGE_STEP) return;
+    lastSentY = sy;
+    if (bgFrame && bgFrame.contentWindow) {
+      bgFrame.contentWindow.postMessage({ scrollY: sy }, '*');
+    }
+  }
+  window.addEventListener('scroll', sendScroll);
+  if (bgFrame) bgFrame.addEventListener('load', sendScroll);
+
+  // --- CONTACT TEXT TYPING ---
+  const altOptions = ['+33635942106', '@MOTION.333'];
+  let altIndex = 0, lastSwapTime = 0, contactTyped = false;
+  function typeContactText(text, container, cb) {
+    container.textContent = '';
+    let idx = 0;
+    const interval = setInterval(() => {
+      if (idx < text.length) container.textContent += text[idx++];
+      else {
+        clearInterval(interval);
+        if (cb) cb();
+      }
+    }, 50);
+  }
+  typeContactText('MOTION333.PRO@GMAIL.COM', contactText, () => {
+    contactTyped = true;
+    typeContactText('Multi-Disciplinary Artist, specialized in:', descriptionText);
+  });
+  contactText.style.pointerEvents = 'auto';
+  contactText.addEventListener('mouseenter', () => {
+    if (!contactTyped) return;
+    const now = Date.now();
+    if (now - lastSwapTime >= 500) {
+      altIndex = (altIndex + 1) % altOptions.length;
+      contactText.textContent = altOptions[altIndex];
+      lastSwapTime = now;
+    }
+  });
+  contactText.addEventListener('mouseleave', () => {
+    if (contactTyped) contactText.textContent = 'MOTION333.PRO@GMAIL.COM';
+  });
+
+  // --- MOTION TEXT LOGIC ---
+  const initial      = "[‘][]’|’:[][\\]";
+  const finalText    = "MOTION";
+  const sequence     = [5, 2, 4, 3, 1, 0];
+  const spacing      = 500;
+  const liftDistance = window.innerHeight + 300;
+
+  // set stacking & base‐offset for each icon
+  const baseOffsets = {};
+  sequence.forEach((idx, z) => icons[idx].style.zIndex = 100 - z);
+  sequence.forEach((idx, i) => {
+    baseOffsets[idx] = Math.round((i / (sequence.length - 1)) * 50);
+  });
+
+  function wrapText(text, container) {
+    container.innerHTML = '';
+    for (let ch of text) {
+      const out = document.createElement('span');
+      out.className = 'letter';
+      const inn = document.createElement('span');
+      inn.className = 'char';
+      out.appendChild(inn);
+      container.appendChild(out);
+    }
+  }
+  function typeText(container, text, cb) {
+    const letters = container.querySelectorAll('.char');
+    let idx = 0;
+    const timer = setInterval(() => {
+      if (idx < text.length) letters[idx++].textContent = text[idx-1];
+      else {
+        clearInterval(timer);
+        if (cb) cb();
+      }
+    }, 100);
+  }
+  function makeInteractive(container) {
+    const hoverScale   = 1.8, neighborScale = 1.2;
+    const normalWght   = 400, neighborWght = 600, hoverWght = 900;
+    const letters      = Array.from(container.children);
+    const baseWidths   = [];
+    let sumBase = 0;
+    letters.forEach(out => {
+      const inn = out.firstElementChild;
+      inn.style.transform = 'scaleX(1)';
+      const w = inn.getBoundingClientRect().width;
+      baseWidths.push(w);
+      sumBase += w;
+    });
+    const totalW = container.getBoundingClientRect().width;
+    const S = totalW / sumBase;
+    letters.forEach((out,i) => {
+      const inn = out.firstElementChild;
+      out.style.width = baseWidths[i] * S + 'px';
+      inn.style.width = baseWidths[i] + 'px';
+      inn.style.transform = `scaleX(${S})`;
+      inn.style.fontVariationSettings = `'wght' ${normalWght}`;
+    });
+    letters.forEach((out,i) => {
+      out.addEventListener('mouseenter', () => {
+        const wH = baseWidths[i] * S;
+        const wN = (i>0?baseWidths[i-1]*S:0)+(i<letters.length-1?baseWidths[i+1]*S:0);
+        const wO = totalW - wH - wN;
+        const R_h = hoverScale, R_n = neighborScale;
+        const R_o = (totalW - wH*R_h - wN*R_n)/wO;
+        letters.forEach((o,j) => {
+          const ch = o.firstElementChild;
+          const R   = j===i ? R_h : (j===i-1||j===i+1 ? R_n : R_o);
+          const wght = j===i ? hoverWght : (j===i-1||j===i+1 ? neighborWght : normalWght);
+          o.style.width = baseWidths[j] * S * R + 'px';
+          ch.style.transform = `scaleX(${S*R})`;
+          ch.style.fontVariationSettings = `'wght' ${wght}`;
+        });
+      });
+      out.addEventListener('mouseleave', () => {
+        letters.forEach((o,j) => {
+          const ch = o.firstElementChild;
+          o.style.width = baseWidths[j] * S + 'px';
+          ch.style.transform = `scaleX(${S})`;
+          ch.style.fontVariationSettings = `'wght' ${normalWght}`;
+        });
+      });
+    });
+  }
+
+  wrapText(initial, interactiveText);
+  typeText(interactiveText, initial, () => {
+    setTimeout(() => {
+      let eraseIdx = interactiveText.children.length - 1;
+      const eraseTimer = setInterval(() => {
+        if (eraseIdx >= 0) {
+          interactiveText.children[eraseIdx--].remove();
+        } else {
+          clearInterval(eraseTimer);
+          setTimeout(() => {
+            wrapText(finalText, interactiveText);
+            typeText(interactiveText, finalText, () => {
+              interactiveText.classList.add('pixelate');
+              setTimeout(() => {
+                interactiveText.classList.remove('pixelate');
+                makeInteractive(interactiveText);
+              }, 500);
+            });
+          }, 300);
+        }
+      }, 50);
+    }, 500);
+  });
+
+  // --- FOLDER DROP-IN INTRO ---
+  const dropSequence = [...sequence].reverse();
+  const dropInterval = 300; // ms between each
+  setTimeout(() => {
+    dropSequence.forEach((idx, i) => {
+      const el = icons[idx];
+      el.style.animation = `dropIn 0.6s cubic-bezier(0.22,1,0.36,1) ${i * dropInterval}ms forwards`;
+      el.addEventListener('animationend', () => {
+        // persist final state so CSS defaults (off-screen/invisible) don't snap back
+        el.style.animation = '';
+        el.style.transform = 'translateY(0)';
+        el.style.opacity   = '1';
+      }, { once: true });
+    });
+  }, 5000);
+
+  // --- SCROLL LIFT LOGIC ---
+  window.addEventListener('scroll', () => {
+    const scrollY    = window.scrollY;
+    const startFade  = sequence.indexOf(1) * spacing;
+    const endFade    = startFade + spacing * 1.2;
+    let fadeRatio = 0;
+    if (scrollY > startFade) {
+      const lin = Math.min((scrollY - startFade) / (endFade - startFade), 1);
+      fadeRatio = 1 - Math.pow(2, -20 * lin);
+    }
+    [interactiveText, contactText, descriptionText].forEach(el => {
+      el.style.opacity = 1 - fadeRatio;
+      el.style.filter  = `blur(${fadeRatio * 10}px)`;
+    });
+  sequence.forEach((idx, i) => {
+      const el    = icons[idx];
+      const base  = baseOffsets[idx] || 0;
+      const start = i * spacing;
+      const end   = (i + 1) * spacing;
+      let prog    = (scrollY - start) / (end - start);
+      prog = Math.max(0, Math.min(prog, 1));
+      const offsetY = base + prog * liftDistance;
+      el.style.transform = `translateY(-${offsetY}px)`;
+    });
+  });
+  // sync initial scroll position
+  sendScroll();
+});
+</script>
+
+<img src="/static/me.jpg" style="position:absolute; top:420vh; left:50%; transform:translateX(-50%); width:150px;" alt="Me">
+
+<div class="footer-paragraph">
+  Proficient working solo or within a creative team. I’m efficient at developping clean and productive workflows and efficient production systems. Detail-focused, sharp eyed for the micro as well as the full picture. Experience working in difficult spaces, musical environnements and challenging deadlines. Passion for developping unique image treatment media and effects. Strong ability with both sober briefs and maximalist detail-heavy scenes. Capable of further developping client ideas by finding creative solutions to design challenges.
+</div>
+
+<!-- Embedded folder orbit section -->
+<iframe src="orbit_inner.html" style="position:absolute; top:550vh; width:100%; height:100vh; border:none;"></iframe>
+<script>
+  window.FOLDER_NAMES = ["example1", "example2"];
+  const orbitIframe = document.querySelector('iframe[src="orbit_inner.html"]');
+  if (orbitIframe) {
+    orbitIframe.addEventListener('load', () => {
+      orbitIframe.contentWindow.postMessage({ folders: window.FOLDER_NAMES }, '*');
+    });
+  }
+</script>
 </body>
 </html>
